@@ -1,0 +1,12 @@
+[package]
+name = "can-socket"
+version = "0.1.0"
+license = "BSD-2-Clause"
+keywords = ["CAN", "SocketCAN", "socket", "controller area network", "network"]
+categories = ["os", "hardware-support", "network-programming", "science::robotics"]
+
+edition = "2021"
+
+[dependencies]
+filedesc = "0.6.3"
+libc = "0.2.148"

@@ -1,0 +1,287 @@
+use std::{os::raw::{c_int, c_void}, mem::MaybeUninit, ffi::CString};
+use filedesc::FileDesc;
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug)]
+#[allow(non_camel_case_types)]
+struct can_frame {
+	pub can_id: u32,
+	pub can_dlc: u8,
+	_pad: u8,
+	_res0: u8,
+	pub len8_dlc: u8,
+	pub data: [u8; 8],
+}
+
+
+#[derive(Debug)]
+pub struct Socket {
+	fd: FileDesc,
+}
+
+pub struct CanFrame {
+	inner: can_frame
+}
+
+#[repr(transparent)]
+#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct CanInterface {
+	index: u32,
+}
+
+impl CanFrame {
+	pub fn new(id: u32, data: &[u8], data_length_code: Option<u8>) -> std::io::Result<Self> {
+		// TODO: check for valid ID
+		if data.len() > 8 {
+			return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "maximum CAN data length is 8 bytes"));
+		}
+		if let Some(data_length_code) = data_length_code {
+			if data.len() != 8 {
+				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "data_length_code can only be set if data length is 8"));
+			}
+			if !(9..=15).contains(&data_length_code) {
+				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "data_length_code must be in the range 9 to 15 (inclusive)"));
+			}
+		}
+
+		let mut inner: can_frame = unsafe { std::mem::zeroed() };
+		inner.can_id = id;
+		inner.can_dlc = data.len() as u8;
+		inner.len8_dlc = data_length_code.unwrap_or(0);
+		inner.data[..data.len()].copy_from_slice(data);
+		Ok(Self { inner })
+	}
+
+	pub fn id(&self) -> u32 {
+		self.inner.can_id
+	}
+
+	pub fn data(&self) -> &[u8] {
+		&self.inner.data[..self.inner.can_dlc as usize]
+	}
+
+	pub fn data_length_code(&self) -> Option<u8> {
+		if self.inner.len8_dlc > 0 {
+			Some(self.inner.len8_dlc)
+		} else {
+			None
+		}
+	}
+
+	fn as_c_void_ptr(&self) -> *const c_void {
+		(self as *const Self).cast()
+	}
+}
+
+impl CanInterface {
+	pub fn from_index(index: u32) -> Self {
+		Self { index }
+	}
+
+	pub fn from_name(name: &str) -> std::io::Result<Self> {
+		let name = CString::new(name)
+			.map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "interface name contain a null byte"))?;
+		let index = unsafe { libc::if_nametoindex(name.as_ptr()) };
+		if index == 0 {
+			return Err(std::io::Error::last_os_error());
+		}
+		Ok(Self::from_index(index))
+	}
+
+	pub fn index(&self) -> u32 {
+		self.index
+	}
+
+	pub fn get_name(&self) -> std::io::Result<String> {
+		let mut buffer = vec![0u8; libc::IF_NAMESIZE];
+		let name = unsafe { libc::if_indextoname(self.index, buffer.as_mut_ptr().cast()) };
+		if name.is_null() {
+			return Err(std::io::Error::last_os_error());
+		}
+		if let Some(len) = buffer.iter().position(|&byte| byte == 0) {
+			buffer.truncate(len)
+		}
+		String::from_utf8(buffer)
+			.map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidData, "interface name contains invalid UTF-8"))
+	}
+
+	fn to_address(&self) -> libc::sockaddr_can {
+		unsafe {
+			let mut addr: libc::sockaddr_can = std::mem::zeroed();
+			addr.can_family = libc::AF_CAN as _;
+			addr.can_ifindex = self.index as _;
+			addr
+		}
+	}
+}
+
+impl Socket {
+	pub fn new(non_blocking: bool) -> std::io::Result<Self> {
+		let flags = match non_blocking {
+			true => libc::SOCK_CLOEXEC | libc::SOCK_NONBLOCK,
+			false => libc::SOCK_CLOEXEC,
+		};
+		unsafe {
+			let fd = check_int(libc::socket(libc::PF_CAN, libc::SOCK_RAW | flags, libc::CAN_RAW))?;
+			Ok(Self {
+				fd: FileDesc::from_raw_fd(fd),
+			})
+		}
+	}
+
+	pub fn set_nonblocking(&self, non_blocking: bool) -> std::io::Result<()> {
+		unsafe {
+			let flags = check_int(libc::fcntl(self.fd.as_raw_fd(), libc::F_GETFL))?;
+			let flags = match non_blocking {
+				true => flags | libc::O_NONBLOCK,
+				false => flags & !libc::O_NONBLOCK,
+			};
+			check_int(libc::fcntl(self.fd.as_raw_fd(), libc::F_SETFL, flags | libc::O_NONBLOCK))?;
+		}
+		Ok(())
+	}
+
+	pub fn get_interface_by_name(&self, name: &str) -> std::io::Result<CanInterface> {
+		unsafe {
+			let mut req: libc::ifreq = std::mem::zeroed();
+			if name.len() + 1 > std::mem::size_of_val(&req.ifr_name) {
+				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "interface name too long"));
+			}
+			if name.as_bytes().iter().any(|&byte| byte == 0) {
+				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "interface name contain a null byte"));
+			}
+			std::ptr::copy(name.as_ptr().cast(), req.ifr_name.as_mut_ptr(), name.len());
+			check_int(libc::ioctl(self.fd.as_raw_fd(), libc::SIOCGIFINDEX, &mut req))?;
+			Ok(CanInterface::from_index(req.ifr_ifru.ifru_ifindex as u32))
+		}
+	}
+
+	pub fn bind(&self, interface: &CanInterface) -> std::io::Result<()> {
+		unsafe {
+			let addr = interface.to_address();
+			check_int(libc::bind(
+				self.fd.as_raw_fd(),
+				&addr as *const _ as *const _,
+				std::mem::size_of_val(&addr) as _),
+			)?;
+			Ok(())
+		}
+	}
+
+	pub fn send(&self, frame: &CanFrame) -> std::io::Result<()> {
+		unsafe {
+			let written = check_isize(libc::send(
+				self.fd.as_raw_fd(),
+				frame.as_c_void_ptr(),
+				std::mem::size_of_val(frame),
+				0,
+			))?;
+			debug_assert!(written as usize == std::mem::size_of_val(frame));
+			Ok(())
+		}
+	}
+
+	pub fn send_to(&self, frame: &CanFrame, interface: &CanInterface) -> std::io::Result<()> {
+		unsafe {
+			let address = interface.to_address();
+			let written = check_isize(libc::sendto(
+				self.fd.as_raw_fd(),
+				&frame as *const _ as *const _,
+				std::mem::size_of_val(frame),
+				0,
+				&address as *const _ as *const _,
+				std::mem::size_of_val(&address) as _,
+			))?;
+			debug_assert!(written as usize == std::mem::size_of_val(frame));
+			Ok(())
+		}
+	}
+
+	pub fn recv(&self) -> std::io::Result<CanFrame> {
+		unsafe {
+			let mut frame: MaybeUninit<CanFrame> = MaybeUninit::uninit();
+			let read = check_isize(libc::recv(
+				self.fd.as_raw_fd(),
+				frame.as_mut_ptr().cast(),
+				std::mem::size_of_val(&frame),
+				0,
+			))?;
+			debug_assert!(read as usize == std::mem::size_of_val(&frame));
+			Ok(frame.assume_init())
+		}
+	}
+
+	pub fn recv_from(&self) -> std::io::Result<(CanFrame, CanInterface)> {
+		unsafe {
+			let mut frame: MaybeUninit<CanFrame> = MaybeUninit::uninit();
+			let mut addr: libc::sockaddr_can = std::mem::zeroed();
+			let read = check_isize(libc::recvfrom(
+				self.fd.as_raw_fd(),
+				frame.as_mut_ptr().cast(),
+				std::mem::size_of_val(&frame),
+				0,
+				&mut addr as *mut _ as *mut _,
+				std::mem::size_of_val(&addr) as _,
+			))?;
+			debug_assert!(read as usize == std::mem::size_of_val(&frame));
+
+			Ok((frame.assume_init(), CanInterface { index: addr.can_ifindex as u32 }))
+		}
+	}
+}
+
+fn check_int(return_value: c_int) -> std::io::Result<c_int> {
+	if return_value == -1 {
+		Err(std::io::Error::last_os_error())
+	} else {
+		Ok(return_value)
+	}
+}
+
+fn check_isize(return_value: isize) -> std::io::Result<isize> {
+	if return_value == -1 {
+		Err(std::io::Error::last_os_error())
+	} else {
+		Ok(return_value)
+	}
+}
+
+impl std::os::fd::AsFd for Socket {
+	fn as_fd(&self) -> std::os::fd::BorrowedFd<'_> {
+		self.fd.as_fd()
+	}
+}
+
+impl From<Socket> for std::os::fd::OwnedFd {
+	fn from(value: Socket) -> Self {
+		value.fd.into()
+	}
+}
+
+impl From<std::os::fd::OwnedFd> for Socket {
+	fn from(value: std::os::fd::OwnedFd) -> Self {
+		Self {
+			fd: FileDesc::from(value),
+		}
+	}
+}
+
+impl std::os::fd::AsRawFd for Socket {
+	fn as_raw_fd(&self) -> std::os::fd::RawFd {
+		self.fd.as_raw_fd()
+	}
+}
+
+impl std::os::fd::IntoRawFd for Socket {
+	fn into_raw_fd(self) -> std::os::fd::RawFd {
+		self.fd.into_raw_fd()
+	}
+}
+
+impl std::os::fd::FromRawFd for Socket {
+	unsafe fn from_raw_fd(fd: std::os::fd::RawFd) -> Self {
+		Self {
+			fd: FileDesc::from_raw_fd(fd)
+		}
+	}
+}
