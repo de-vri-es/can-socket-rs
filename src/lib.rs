@@ -1,5 +1,8 @@
 mod sys;
 
+#[cfg(feature = "tokio")]
+pub mod tokio;
+
 pub struct CanSocket {
 	inner: sys::Socket,
 }
