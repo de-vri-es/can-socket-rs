@@ -3,20 +3,20 @@ use crate::error::{InvalidId, ParseIdError};
 pub const MAX_CAN_ID_BASE: u16 = 0x7FF;
 pub const MAX_CAN_ID_EXTENDED: u32 = 0x1FFF_FFFF;
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 #[repr(C)]
 pub enum CanId {
 	Base(CanBaseId),
 	Extended(CanExtendedId),
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct CanBaseId {
 	id: u16,
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 #[repr(transparent)]
 pub struct CanExtendedId {
 	id: u32,
@@ -223,5 +223,72 @@ fn parse_number(input: &str) -> Result<u32, std::num::ParseIntError> {
 		u32::from_str_radix(binary, 2)
 	} else {
 		input.parse()
+	}
+}
+
+impl std::fmt::Debug for CanId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Base(id) => id.fmt(f),
+			Self::Extended(id) => id.fmt(f),
+		}
+	}
+}
+
+impl std::fmt::Debug for CanBaseId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_tuple("CanBaseId")
+			.field(&format_args!("0x{:03X}", self.id))
+			.finish()
+	}
+}
+
+impl std::fmt::Debug for CanExtendedId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_tuple("CanExtendedId")
+			.field(&format_args!("0x{:08X}", self.id))
+			.finish()
+	}
+}
+
+impl std::fmt::LowerHex for CanBaseId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		self.as_u16().fmt(f)
+	}
+}
+
+impl std::fmt::LowerHex for CanExtendedId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		self.as_u32().fmt(f)
+	}
+}
+
+impl std::fmt::LowerHex for CanId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Base(x) => x.fmt(f),
+			Self::Extended(x) => x.fmt(f),
+		}
+	}
+}
+
+impl std::fmt::UpperHex for CanBaseId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		self.as_u16().fmt(f)
+	}
+}
+
+impl std::fmt::UpperHex for CanExtendedId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		self.as_u32().fmt(f)
+	}
+}
+
+impl std::fmt::UpperHex for CanId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			Self::Base(x) => x.fmt(f),
+			Self::Extended(x) => x.fmt(f),
+		}
 	}
 }

@@ -96,7 +96,7 @@ impl std::os::fd::FromRawFd for CanSocket {
 impl std::fmt::Debug for CanFrame {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		f.debug_struct("CanFrame")
-			.field("id", &format_args!("0x{:03X}", self.id()))
+			.field("id", &format_args!("{:?}", self.id()))
 			.field("data", &format_args!("{:02X?}", self.data()))
 			.field("data_length_code", &self.data_length_code())
 			.finish()
