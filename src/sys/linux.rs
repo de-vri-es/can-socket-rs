@@ -56,8 +56,14 @@ impl CanFrame {
 		Ok(Self { inner })
 	}
 
-	pub fn id(&self) -> u32 {
-		self.inner.can_id
+	pub fn id(&self) -> CanId {
+		// Unwrap should be fine: the kernel should never give us an invalid CAN ID,
+		// and the Rust constructor doesn't allow it.
+		if self.inner.can_id & libc::CAN_EFF_FLAG == 0 {
+			CanId::new_base((self.inner.can_id & libc::CAN_SFF_MASK) as u16).unwrap()
+		} else {
+			CanId::new_extended(self.inner.can_id & libc::CAN_EFF_MASK).unwrap()
+		}
 	}
 
 	pub fn data(&self) -> &[u8] {
