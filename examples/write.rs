@@ -1,4 +1,4 @@
-use can_socket::{CanFrame, CanSocket};
+use can_socket::{CanFrame, CanId, CanSocket};
 
 #[derive(clap::Parser)]
 struct Options {
@@ -8,7 +8,7 @@ struct Options {
 
 	/// The CAN ID of the message.
 	#[clap(long)]
-	id: u32,
+	id: CanId,
 
 	/// The data length code to send.
 	///

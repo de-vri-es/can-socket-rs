@@ -1,4 +1,4 @@
-mod sys;
+pub mod error;
 
 #[cfg(feature = "tokio")]
 pub mod tokio;
@@ -7,6 +7,10 @@ pub struct CanSocket {
 	inner: sys::Socket,
 }
 
+mod can_id;
+pub use can_id::*;
+
+mod sys;
 pub use sys::CanFrame;
 pub use sys::CanInterface;
 

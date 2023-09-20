@@ -1,6 +1,8 @@
 use std::{os::raw::{c_int, c_void}, mem::MaybeUninit, ffi::CString};
 use filedesc::FileDesc;
 
+use crate::CanId;
+
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
 #[allow(non_camel_case_types)]
@@ -30,8 +32,7 @@ pub struct CanInterface {
 }
 
 impl CanFrame {
-	pub fn new(id: u32, data: &[u8], data_length_code: Option<u8>) -> std::io::Result<Self> {
-		// TODO: check for valid ID
+	pub fn new(id: CanId, data: &[u8], data_length_code: Option<u8>) -> std::io::Result<Self> {
 		if data.len() > 8 {
 			return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "maximum CAN data length is 8 bytes"));
 		}
@@ -45,7 +46,10 @@ impl CanFrame {
 		}
 
 		let mut inner: can_frame = unsafe { std::mem::zeroed() };
-		inner.can_id = id;
+		inner.can_id = match id {
+			CanId::Extended(x) => x.as_u32() | libc::CAN_EFF_FLAG,
+			CanId::Base(x) => x.as_u16().into(),
+		};
 		inner.can_dlc = data.len() as u8;
 		inner.len8_dlc = data_length_code.unwrap_or(0);
 		inner.data[..data.len()].copy_from_slice(data);
