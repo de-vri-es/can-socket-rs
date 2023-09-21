@@ -1,0 +1,13 @@
+[package]
+name = "canopen-socket"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+can-socket = { path = "../can-socket", features = ["tokio"] }
+num_enum = "0.7.0"
+tokio = { version = "1.32.0", features = ["time"] }
+
+[dev-dependencies]
+clap = { version = "4.4.4", features = ["derive"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
