@@ -12,11 +12,11 @@ struct Options {
 	#[clap(value_parser(parse_number::<u8>))]
 	node_id: u8,
 
-	/// The object index to read.
+	/// The object index to read from.
 	#[clap(value_parser(parse_number::<u16>))]
 	index: u16,
 
-	/// The object index to read.
+	/// The object subindex to read from.
 	#[clap(value_parser(parse_number::<u8>))]
 	subindex: u8,
 
