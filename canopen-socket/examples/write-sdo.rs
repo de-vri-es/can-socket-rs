@@ -1,7 +1,8 @@
-use std::time::Duration;
-
 use can_socket::tokio::CanSocket;
-use canopen_socket::{CanOpenSocket, sdo::SdoAddress};
+use canopen_socket::CanOpenSocket;
+use canopen_socket::ObjectIndex;
+use canopen_socket::sdo::SdoAddress;
+use std::time::Duration;
 
 #[derive(clap::Parser)]
 struct Options {
@@ -47,7 +48,8 @@ async fn do_main(options: Options) -> Result<(), ()> {
 		.map_err(|e| log::error!("Failed to create CAN socket for interface {}: {e}", options.interface))?;
 	let mut socket = CanOpenSocket::new(socket);
 
-	socket.sdo_download(SdoAddress::standard(), options.node_id, options.index, options.subindex, &options.data, options.timeout).await
+	let object = ObjectIndex::new(options.index, options.subindex);
+	socket.sdo_download(SdoAddress::standard(), options.node_id, object, &options.data, options.timeout).await
 		.map_err(|e| log::error!("{e}"))?;
 	Ok(())
 }

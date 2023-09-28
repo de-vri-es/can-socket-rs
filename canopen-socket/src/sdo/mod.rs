@@ -2,7 +2,7 @@
 
 use can_socket::CanFrame;
 
-use crate::CanOpenSocket;
+use crate::{CanOpenSocket, ObjectIndex};
 
 mod address;
 pub use address::*;
@@ -194,17 +194,16 @@ async fn send_abort_transfer_command(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
+	object: ObjectIndex,
 	reason: AbortReason,
 ) -> Result<(), SdoError> {
 	let reason = u32::from(reason).to_be_bytes();
-	let object_index = object_index.to_be_bytes();
+	let object_index = object.index.to_be_bytes();
 	let data: [u8; 8] = [
 		(ClientCommand::AbortTransfer as u8) << 5,
 		object_index[0],
 		object_index[1],
-		object_subindex,
+		object.subindex,
 		reason[0],
 		reason[1],
 		reason[2],

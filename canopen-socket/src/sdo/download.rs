@@ -1,8 +1,7 @@
+use can_socket::CanFrame;
 use std::time::Duration;
 
-use can_socket::CanFrame;
-
-use crate::CanOpenSocket;
+use crate::{CanOpenSocket, ObjectIndex};
 
 use super::{
 	ClientCommand,
@@ -17,8 +16,7 @@ pub async fn sdo_download(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
+	object: ObjectIndex,
 	data: &[u8],
 	timeout: Duration,
 ) -> Result<(), SdoError> {
@@ -28,8 +26,7 @@ pub async fn sdo_download(
 			bus,
 			address,
 			node_id,
-			object_index,
-			object_subindex,
+			object,
 			data,
 			timeout,
 		).await
@@ -38,8 +35,7 @@ pub async fn sdo_download(
 			bus,
 			address,
 			node_id,
-			object_index,
-			object_subindex,
+			object,
 			data,
 			timeout,
 		).await
@@ -51,17 +47,16 @@ async fn sdo_download_expidited(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
+	object: ObjectIndex,
 	data: &[u8],
 	timeout: Duration,
 ) -> Result<(), SdoError> {
 	log::debug!("Sending initiate expidited download request");
 	log::debug!("├─ SDO: command: 0x{:04X}, response: 0x{:04X}", address.command_address(), address.response_address());
 	log::debug!("├─ Node ID: {node_id:?}");
-	log::debug!("├─ Object: index = 0x{object_index:04X}, subindex = 0x{object_subindex:02X}");
+	log::debug!("├─ Object: index = 0x{:04X}, subindex = 0x{:02X}", object.index, object.subindex);
 	log::debug!("└─ Timeout: {timeout:?}");
-	let command = make_sdo_expidited_download_command(address, node_id, object_index, object_subindex, data);
+	let command = make_sdo_expidited_download_command(address, node_id, object, data);
 	bus.socket.send(&command).await
 		.map_err(SdoError::SendFailed)?;
 
@@ -79,23 +74,22 @@ async fn sdo_download_segmented(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
+	object: ObjectIndex,
 	data: &[u8],
 	timeout: Duration,
 ) -> Result<(), SdoError> {
 	let data_len: u32 = data.len().try_into()
-		.map_err(|_| super::error::DataLengthExceedsMaximum { data_len: data.len() })?;
+		.map_err(|_| super::DataLengthExceedsMaximum { data_len: data.len() })?;
 
 	log::debug!("Sending initiate segmented download request");
 	log::debug!("├─ SDO: command: 0x{:04X}, response: 0x{:04X}", address.command_address(), address.response_address());
 	log::debug!("├─ Node ID: {node_id:?}");
-	log::debug!("├─ Object: index = 0x{object_index:04X}, subindex = 0x{object_subindex:02X}");
+	log::debug!("├─ Object: index = 0x{:04X}, subindex = 0x{:02X}", object.index, object.subindex);
 	log::debug!("├─ Data length: 0x{data_len:04X}");
 	log::debug!("└─ Timeout: {timeout:?}");
 
 	// Send command to iniate segmented download to server.
-	let command = make_sdo_initiate_segmented_download_command(address, node_id, object_index, object_subindex, data_len);
+	let command = make_sdo_initiate_segmented_download_command(address, node_id, object, data_len);
 	bus.socket.send(&command).await
 		.map_err(SdoError::SendFailed)?;
 
@@ -136,8 +130,7 @@ async fn sdo_download_segmented(
 				bus,
 				address,
 				node_id,
-				object_index,
-				object_subindex,
+				object,
 				crate::sdo::AbortReason::GeneralError,
 			).await.ok();
 			Err(e)
@@ -151,18 +144,17 @@ async fn sdo_download_segmented(
 fn make_sdo_expidited_download_command(
 	address: SdoAddress,
 	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
+	object: ObjectIndex,
 	data: &[u8],
 ) -> CanFrame {
 	debug_assert!(data.len() <= 4);
 	let n = 4 - data.len() as u8;
-	let object_index = object_index.to_le_bytes();
+	let object_index = object.index.to_le_bytes();
 	let data: [u8; 8] = [
 		u8::from(ClientCommand::InitiateDownload) << 5 | n << 2 | 0x03, // 0x03 means expidited and size-set flags enabled.
 		object_index[0],
 		object_index[1],
-		object_subindex,
+		object.subindex,
 		data.get(0).copied().unwrap_or(0),
 		data.get(1).copied().unwrap_or(0),
 		data.get(2).copied().unwrap_or(0),
@@ -176,17 +168,16 @@ fn make_sdo_expidited_download_command(
 fn make_sdo_initiate_segmented_download_command(
 	address: SdoAddress,
 	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
+	object: ObjectIndex,
 	len: u32,
 ) -> CanFrame {
 	let len = len.to_le_bytes();
-	let object_index = object_index.to_le_bytes();
+	let object_index = object.index.to_le_bytes();
 	let data: [u8; 8] = [
 		u8::from(ClientCommand::InitiateDownload) << 5 | 0x01, // 0x01 means not expidited, size-set enabled.
 		object_index[0],
 		object_index[1],
-		object_subindex,
+		object.subindex,
 		len[0],
 		len[1],
 		len[2],

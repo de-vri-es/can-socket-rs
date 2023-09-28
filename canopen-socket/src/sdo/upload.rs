@@ -1,8 +1,7 @@
+use can_socket::CanFrame;
 use std::time::Duration;
 
-use can_socket::CanFrame;
-
-use crate::CanOpenSocket;
+use crate::{CanOpenSocket, ObjectIndex};
 use super::{
 	SdoAddress,
 	ClientCommand,
@@ -18,16 +17,15 @@ pub async fn sdo_upload(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
+	object: ObjectIndex,
 	timeout: Duration,
 ) -> Result<Vec<u8>, SdoError> {
 	log::debug!("Sending initiate upload request");
 	log::debug!("├─ SDO: command: 0x{:04X}, response: 0x{:04X}", address.command_address(), address.response_address());
 	log::debug!("├─ Node ID: {node_id:?}");
-	log::debug!("├─ Object: index = 0x{object_index:04X}, subindex = 0x{object_subindex:02X}");
+	log::debug!("├─ Object: index = 0x{:04X}, subindex = 0x{:02X}", object.index, object.subindex);
 	log::debug!("└─ Timeout: {timeout:?}");
-	let command = make_sdo_initiate_upload_request(address, node_id, object_index, object_subindex);
+	let command = make_sdo_initiate_upload_request(address, node_id, object);
 	bus.socket.send(&command).await
 		.map_err(SdoError::SendFailed)?;
 
@@ -92,8 +90,7 @@ pub async fn sdo_upload(
 				bus,
 				address,
 				node_id,
-				object_index,
-				object_subindex,
+				object,
 				crate::sdo::AbortReason::GeneralError,
 			).await.ok();
 			Err(e)
@@ -103,13 +100,17 @@ pub async fn sdo_upload(
 }
 
 /// Make an SDO initiate upload request.
-fn make_sdo_initiate_upload_request(address: SdoAddress, node_id: u8, object_index: u16, object_subindex: u8) -> CanFrame {
-	let object_index = object_index.to_le_bytes();
+fn make_sdo_initiate_upload_request(
+	address: SdoAddress,
+	node_id: u8,
+	object: ObjectIndex,
+) -> CanFrame {
+	let object_index = object.index.to_le_bytes();
 	let data = [
 		(ClientCommand::InitiateUpload as u8) << 5,
 		object_index[0],
 		object_index[1],
-		object_subindex,
+		object.subindex,
 		0, 0, 0, 0,
 	];
 	CanFrame::new(address.command_id(node_id), &data, None).unwrap()

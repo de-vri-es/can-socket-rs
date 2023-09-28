@@ -23,6 +23,16 @@ pub struct CanOpenSocket {
 	// read_queue: Vec<CanFrame>,
 }
 
+/// An index in the object dictionary.
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub struct ObjectIndex {
+	/// The main index of the object.
+	pub index: u16,
+
+	/// The subindex of the object.
+	pub subindex: u8,
+}
+
 impl CanOpenSocket {
 	/// Create a new CANopen socket from a [`CanSocket`].
 	pub fn new(can_socket: CanSocket) -> Self {
@@ -50,11 +60,10 @@ impl CanOpenSocket {
 		&mut self,
 		address: sdo::SdoAddress,
 		node_id: u8,
-		object_index: u16,
-		object_subindex: u8,
+		object: ObjectIndex,
 		timeout: Duration,
 	) -> Result<Vec<u8>, sdo::SdoError> {
-		sdo::sdo_upload(self, address, node_id, object_index, object_subindex, timeout).await
+		sdo::sdo_upload(self, address, node_id, object, timeout).await
 	}
 
 	/// Write an object dictionary value by performing a download to a SDO server.
@@ -65,12 +74,11 @@ impl CanOpenSocket {
 		&mut self,
 		address: sdo::SdoAddress,
 		node_id: u8,
-		object_index: u16,
-		object_subindex: u8,
+		object: ObjectIndex,
 		data: &[u8],
 		timeout: Duration,
 	) -> Result<(), sdo::SdoError> {
-		sdo::sdo_download(self, address, node_id, object_index, object_subindex, data, timeout).await
+		sdo::sdo_download(self, address, node_id, object, data, timeout).await
 	}
 
 	/// Receive a new message from the CAN bus that that matches the given predicate.
@@ -110,5 +118,12 @@ impl CanOpenSocket {
 	/// If a message does not match the filter, it is added to the read queue.
 	async fn recv_new_by_can_id(&mut self, can_id: CanBaseId, timeout: Duration) -> std::io::Result<Option<CanFrame>> {
 		self.recv_new_filtered(|frame| frame.id().to_base().ok() == Some(can_id), timeout).await
+	}
+}
+
+impl ObjectIndex {
+	/// Create a new object index from a main index and a subindex.
+	pub fn new(index: u16, subindex: u8) -> Self {
+		Self { index, subindex }
 	}
 }
