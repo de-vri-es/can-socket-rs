@@ -14,7 +14,8 @@ use super::{
 };
 
 
-pub async fn read_sdo(
+/// Perform a SDO upload from the server.
+pub async fn sdo_upload(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
@@ -102,6 +103,7 @@ pub async fn read_sdo(
 	}
 }
 
+/// Make an SDO initiate upload request.
 fn make_sdo_initiate_upload_request(address: SdoAddress, node_id: u8, object_index: u16, object_subindex: u8) -> CanFrame {
 	let object_index = object_index.to_le_bytes();
 	let data = [
@@ -114,6 +116,7 @@ fn make_sdo_initiate_upload_request(address: SdoAddress, node_id: u8, object_ind
 	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
 }
 
+/// Make an SDO upload segment request.
 fn make_sdo_upload_segment_request(address: SdoAddress, node_id: u8, toggle: bool) -> CanFrame {
 	let data = [
 		(ClientCommand::SegmentUpload as u8) << 5 | u8::from(toggle) << 4,
@@ -123,12 +126,17 @@ fn make_sdo_upload_segment_request(address: SdoAddress, node_id: u8, toggle: boo
 	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
 }
 
+/// An SDO initiate upload response.
 enum InitiateUploadResponse<'a> {
+	/// An expidited response containing the actual data.
 	Expedited(&'a [u8]),
+
+	/// A segmented response containing the length of the data.
 	Segmented(u32),
 }
 
 impl<'a> InitiateUploadResponse<'a> {
+	/// Parse an InitiateUploadResponse from a CAN frame.
 	fn parse(frame: &'a CanFrame) -> Result<Self, SdoError> {
 		check_server_command(frame, ServerCommand::InitiateUpload)?;
 		let data = frame.data();
@@ -152,6 +160,12 @@ impl<'a> InitiateUploadResponse<'a> {
 	}
 }
 
+/// Parse an SDO segment upload response.
+///
+/// If successfull, returns a tuple with a boolean and a byte slice.
+///
+/// The boolean indicates if the transfer is completed by this frame.
+/// The byte slice holds the data of the frame.
 fn parse_segment_upload_response(frame: &CanFrame, expected_toggle: bool) -> Result<(bool, &[u8]), SdoError> {
 	check_server_command(frame, ServerCommand::SegmentUpload)?;
 	let data = frame.data();

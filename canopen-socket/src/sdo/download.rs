@@ -12,7 +12,8 @@ use super::{
 	check_server_command,
 };
 
-pub async fn write_sdo(
+/// Perform an SDO download (write) to the server.
+pub async fn sdo_download(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
@@ -23,7 +24,7 @@ pub async fn write_sdo(
 ) -> Result<(), SdoError> {
 	// Can write in a single frame.
 	if data.len() <= 4 {
-		write_sdo_expidited(
+		sdo_download_expidited(
 			bus,
 			address,
 			node_id,
@@ -33,7 +34,7 @@ pub async fn write_sdo(
 			timeout,
 		).await
 	} else {
-		write_sdo_segmented(
+		sdo_download_segmented(
 			bus,
 			address,
 			node_id,
@@ -45,7 +46,8 @@ pub async fn write_sdo(
 	}
 }
 
-async fn write_sdo_expidited(
+/// Perform an expidited SDO download (write) to the server.
+async fn sdo_download_expidited(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
@@ -72,32 +74,8 @@ async fn write_sdo_expidited(
 	Ok(())
 }
 
-#[allow(clippy::get_first, clippy::identity_op)]
-fn make_sdo_expidited_download_command(
-	address: SdoAddress,
-	node_id: u8,
-	object_index: u16,
-	object_subindex: u8,
-	data: &[u8],
-) -> CanFrame {
-	debug_assert!(data.len() <= 4);
-	let n = 4 - data.len() as u8;
-	let object_index = object_index.to_le_bytes();
-	let data: [u8; 8] = [
-		u8::from(ClientCommand::InitiateDownload) << 5 | n << 2 | 0x03, // 0x03 means expidited and size-set flags enabled.
-		object_index[0],
-		object_index[1],
-		object_subindex,
-		data.get(0).copied().unwrap_or(0),
-		data.get(1).copied().unwrap_or(0),
-		data.get(2).copied().unwrap_or(0),
-		data.get(3).copied().unwrap_or(0),
-	];
-
-	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
-}
-
-async fn write_sdo_segmented(
+/// Perform an segmented SDO download (write) to the server.
+async fn sdo_download_segmented(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
@@ -168,6 +146,33 @@ async fn write_sdo_segmented(
 	}
 }
 
+/// Make an SDO initiate expidited download command.
+#[allow(clippy::get_first)]
+fn make_sdo_expidited_download_command(
+	address: SdoAddress,
+	node_id: u8,
+	object_index: u16,
+	object_subindex: u8,
+	data: &[u8],
+) -> CanFrame {
+	debug_assert!(data.len() <= 4);
+	let n = 4 - data.len() as u8;
+	let object_index = object_index.to_le_bytes();
+	let data: [u8; 8] = [
+		u8::from(ClientCommand::InitiateDownload) << 5 | n << 2 | 0x03, // 0x03 means expidited and size-set flags enabled.
+		object_index[0],
+		object_index[1],
+		object_subindex,
+		data.get(0).copied().unwrap_or(0),
+		data.get(1).copied().unwrap_or(0),
+		data.get(2).copied().unwrap_or(0),
+		data.get(3).copied().unwrap_or(0),
+	];
+
+	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
+}
+
+/// Make an SDO initiate segmented download command.
 fn make_sdo_initiate_segmented_download_command(
 	address: SdoAddress,
 	node_id: u8,
@@ -191,6 +196,7 @@ fn make_sdo_initiate_segmented_download_command(
 	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
 }
 
+/// Make an SDO download segment command.
 #[allow(clippy::get_first)]
 fn make_sdo_segment_download_command(
 	address: SdoAddress,
@@ -217,6 +223,7 @@ fn make_sdo_segment_download_command(
 	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
 }
 
+/// Parse an SDO download segment response.
 fn parse_segment_download_response(frame: &CanFrame, expected_toggle: bool) -> Result<(), SdoError> {
 	check_server_command(frame, ServerCommand::SegmentDownload)?;
 	let data = frame.data();

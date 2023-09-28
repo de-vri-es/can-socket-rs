@@ -42,11 +42,11 @@ impl CanOpenSocket {
 		nmt::send_nmt_command(self, node_id, command, timeout).await
 	}
 
-	/// Read an object dictionary value by performing an "upload" from a SDO server.
+	/// Read an object dictionary value by performing an upload from a SDO server.
 	///
-	/// Note that upload means "upload to server",
-	/// so most people outside of [CiA](https://can-cia.org/) would call this a download.
-	pub async fn read_sdo(
+	/// Note that upload means "upload to server".
+	/// Most people outside of [CiA](https://can-cia.org/) would call this a download.
+	pub async fn sdo_upload(
 		&mut self,
 		address: sdo::SdoAddress,
 		node_id: u8,
@@ -54,14 +54,14 @@ impl CanOpenSocket {
 		object_subindex: u8,
 		timeout: Duration,
 	) -> Result<Vec<u8>, sdo::SdoError> {
-		sdo::read_sdo(self, address, node_id, object_index, object_subindex, timeout).await
+		sdo::sdo_upload(self, address, node_id, object_index, object_subindex, timeout).await
 	}
 
-	/// Write an object dictionary value by performing a "download" to a SDO server.
+	/// Write an object dictionary value by performing a download to a SDO server.
 	///
-	/// Note that download means "download to server",
-	/// so most people outside of [CiA](https://can-cia.org/) would call this an upload.
-	pub async fn write_sdo(
+	/// Note that download means "download to server".
+	/// Most people outside of [CiA](https://can-cia.org/) would call this an upload.
+	pub async fn sdo_download(
 		&mut self,
 		address: sdo::SdoAddress,
 		node_id: u8,
@@ -70,7 +70,7 @@ impl CanOpenSocket {
 		data: &[u8],
 		timeout: Duration,
 	) -> Result<(), sdo::SdoError> {
-		sdo::write_sdo(self, address, node_id, object_index, object_subindex, data, timeout).await
+		sdo::sdo_download(self, address, node_id, object_index, object_subindex, data, timeout).await
 	}
 
 	/// Receive a new message from the CAN bus that that matches the given predicate.

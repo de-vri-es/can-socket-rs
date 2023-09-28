@@ -1,26 +1,51 @@
+/// Error that can occur during an SDO transfer.
 #[derive(Debug)]
 pub enum SdoError {
+	/// The SDO address is invalid for use as a CAN ID.
 	InvalidCanId(can_socket::error::InvalidId),
+
+	/// The data length for the transfer exceeds the maximum size.
 	DataLengthExceedsMaximum(DataLengthExceedsMaximum),
+
+	/// Sending a CAN frame failed.
 	SendFailed(std::io::Error),
+
+	/// Receiving a CAN frame failed.
 	RecvFailed(std::io::Error),
+
+	/// A timeout occured while waiting for a response message.
 	Timeout,
+
+	/// The transfer was aborted by the SDO server.
 	TransferAborted(TransferAborted),
+
+	/// The response from the server does not follow the correct format for an SDO response.
 	MalformedResponse(MalformedResponse),
+
+	/// Received an SDO response with an unexpected server command.
 	UnexpectedResponse(UnexpectedResponse),
+
+	/// Received a different amount of data then advertised by the server.
 	WrongDataCount(WrongDataCount),
 }
 
+/// The data length for the transfer exceeds the maximum size.
 #[derive(Debug)]
 pub struct DataLengthExceedsMaximum {
+	/// The length of the data.
 	pub(super) data_len: usize,
 }
 
+/// The transfer was aborted by the SDO server.
 #[derive(Debug)]
 pub struct TransferAborted {
+	/// The reason from the server for aborting the transfer.
 	pub(super) reason: Result<AbortReason, u32>,
 }
 
+/// The reason for aborting a transfer.
+///
+/// Definitions come from CiA 301 section 7.2.3.3.17 table 22.
 #[derive(Debug)]
 #[derive(num_enum::IntoPrimitive, num_enum::TryFromPrimitive)]
 #[repr(u32)]
@@ -120,24 +145,42 @@ pub enum AbortReason {
 
 }
 
+/// The response from the server does not follow the correct format for an SDO response.
 #[derive(Debug)]
 pub enum MalformedResponse {
+	/// The CAN frame does not have the correct length of 8 data bytes.
 	WrongFrameSize(usize),
+
+	/// The server command is not valid.
 	InvalidServerCommand(u8),
+
+	/// The flags on the message are not valid.
 	InvalidFlags,
+
+	/// The toggle flag is not in the expected state.
 	InvalidToggleFlag,
+
+	/// The server is giving us more segments than it should.
 	TooManySegments,
 }
 
+/// Received an SDO response with an unexpected server command.
 #[derive(Debug)]
 pub struct UnexpectedResponse {
+	/// The expected server command.
 	pub(super) expected: super::ServerCommand,
+
+	/// The actual server command.
 	pub(super) actual: super::ServerCommand,
 }
 
+/// Received a different amount of data then advertised by the server.
 #[derive(Debug)]
 pub struct WrongDataCount {
+	/// The expected amount of data as originally advertised by the server.
 	pub(super) expected: usize,
+
+	/// The actual amount of data received from the server.
 	pub(super) actual: usize,
 }
 

@@ -1,8 +1,5 @@
 //! Service Data Object (SDO) types and utilities.
 
-// TODO
-#![allow(missing_docs)]
-
 use can_socket::CanFrame;
 
 use crate::CanOpenSocket;
@@ -13,35 +10,58 @@ pub use address::*;
 mod error;
 pub use error::*;
 
-mod read;
-pub(crate) use read::*;
+mod upload;
+pub(crate) use upload::*;
 
-mod write;
-pub(crate) use write::*;
+mod download;
+pub(crate) use download::*;
 
+/// SDO command that can be sent by a client.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[derive(num_enum::IntoPrimitive, num_enum::TryFromPrimitive)]
 #[repr(u8)]
 enum ClientCommand {
+	/// Download a segment to the server.
 	SegmentDownload = 0,
+
+	/// Initiate a download to the server.
 	InitiateDownload = 1,
+
+	/// Initiate an upload from the server.
 	InitiateUpload = 2,
+
+	/// Request the server to upload a segment.
 	SegmentUpload = 3,
+
+	/// Tell the server we are aborting the transfer.
 	AbortTransfer = 4,
 }
 
+/// SDO command that can be sent by a server.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[derive(num_enum::IntoPrimitive, num_enum::TryFromPrimitive)]
 #[repr(u8)]
 enum ServerCommand {
+	/// The server is uploading a segment.
 	SegmentUpload = 0,
+
+	/// The server has downloaded the segment.
 	SegmentDownload = 1,
+
+	/// The server accepts the upload request.
 	InitiateUpload = 2,
+
+	/// The server accepts the download request.
 	InitiateDownload = 3,
+
+	/// The server is aborting the transfer.
 	AbortTransfer = 4,
 }
 
-fn get_response_command(frame: &CanFrame) -> Result<ServerCommand, SdoError> {
+/// Extract the response command from a CAN frame.
+///
+/// The CAN frame should be an SDO response from an SDO server.
+fn get_server_command(frame: &CanFrame) -> Result<ServerCommand, SdoError> {
 	let data = frame.data();
 	if data.len() < 8 {
 		return Err(MalformedResponse::WrongFrameSize(data.len()).into());
@@ -52,8 +72,11 @@ fn get_response_command(frame: &CanFrame) -> Result<ServerCommand, SdoError> {
 	Ok(command)
 }
 
+/// Check if the response command is the expected one.
+///
+/// Has special handling for [`ServerCommand::AbortTransfer`] to return a [`TransferAborted`] error.
 fn check_server_command(frame: &CanFrame, expected: ServerCommand) -> Result<(), SdoError> {
-	let command = get_response_command(frame)?;
+	let command = get_server_command(frame)?;
 	if command == expected {
 		Ok(())
 	} else if command == ServerCommand::AbortTransfer {
@@ -65,6 +88,7 @@ fn check_server_command(frame: &CanFrame, expected: ServerCommand) -> Result<(),
 	}
 }
 
+/// Send an abort command to an SDO server.
 async fn send_abort_transfer_command(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
