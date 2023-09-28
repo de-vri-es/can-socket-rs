@@ -58,6 +58,13 @@ impl CanId {
 		}
 	}
 
+	pub fn to_base(self) -> Result<CanBaseId, InvalidId> {
+		match self {
+			Self::Base(id) => Ok(id),
+			Self::Extended(id) => id.try_into(),
+		}
+	}
+
 	pub fn to_extended(self) -> CanExtendedId {
 		match self {
 			Self::Base(id) => id.into(),
@@ -142,6 +149,37 @@ impl TryFrom<u16> for CanBaseId {
 	}
 }
 
+impl TryFrom<u32> for CanBaseId {
+	type Error = InvalidId;
+
+	fn try_from(value: u32) -> Result<Self, Self::Error> {
+		if value > MAX_CAN_ID_BASE.into() {
+			Err(InvalidId {
+				id: Some(value),
+				extended: false,
+			})
+		} else {
+			Ok(Self { id: value as u16 })
+		}
+	}
+}
+
+impl TryFrom<CanExtendedId> for CanBaseId {
+	type Error = InvalidId;
+
+	fn try_from(value: CanExtendedId) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_u32())
+	}
+}
+
+impl TryFrom<CanId> for CanBaseId {
+	type Error = InvalidId;
+
+	fn try_from(value: CanId) -> Result<Self, Self::Error> {
+		Self::try_from(value.as_u32())
+	}
+}
+
 impl From<u8> for CanExtendedId {
 	fn from(value: u8) -> Self {
 		Self { id: value.into() }
@@ -159,6 +197,18 @@ impl TryFrom<u32> for CanExtendedId {
 
 	fn try_from(value: u32) -> Result<Self, Self::Error> {
 		Self::new(value)
+	}
+}
+
+impl From<CanBaseId> for CanExtendedId {
+	fn from(value: CanBaseId) -> Self {
+		value.as_u16().into()
+	}
+}
+
+impl From<CanId> for CanExtendedId {
+	fn from(value: CanId) -> Self {
+		value.to_extended()
 	}
 }
 
@@ -195,12 +245,6 @@ impl From<CanBaseId> for CanId {
 impl From<CanExtendedId> for CanId {
 	fn from(value: CanExtendedId) -> Self {
 		Self::Extended(value)
-	}
-}
-
-impl From<CanBaseId> for CanExtendedId {
-	fn from(value: CanBaseId) -> Self {
-		Self::from(value.as_u16())
 	}
 }
 
