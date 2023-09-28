@@ -134,3 +134,27 @@ pub struct WrongDataCount {
 	pub(super) expected: usize,
 	pub(super) actual: usize,
 }
+
+impl From<TransferAborted> for SdoError {
+	fn from(value: TransferAborted) -> Self {
+		Self::TransferAborted(value)
+	}
+}
+
+impl From<MalformedResponse> for SdoError {
+	fn from(value: MalformedResponse) -> Self {
+		Self::MalformedResponse(value)
+	}
+}
+
+impl From<UnexpectedResponse> for SdoError {
+	fn from(value: UnexpectedResponse) -> Self {
+		Self::UnexpectedResponse(value)
+	}
+}
+
+impl From<WrongDataCount> for SdoError {
+	fn from(value: WrongDataCount) -> Self {
+		Self::WrongDataCount(value)
+	}
+}

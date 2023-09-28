@@ -96,31 +96,29 @@ pub struct UnexpectedState {
 	pub actual: NmtState,
 }
 
-impl CanOpenSocket {
-	/// Send an NMT command and wait for the device to go into the specified state.
-	pub async fn send_nmt_command(&mut self, node_id: u8, command: NmtCommand, timeout: Duration) -> Result<(), NmtError> {
-		log::debug!("Sending NMT command {command:?} to node 0x{node_id:02X} (timeout {timeout:?})");
-		let command_frame = CanFrame::new(
-			NMT_COB_ID,
-			&[command as u8, node_id],
-			None,
-		).unwrap();
-		self.socket.send(&command_frame)
-			.await
-			.map_err(NmtError::SendFailed)?;
+/// Send an NMT command and wait for the device to go into the specified state.
+pub async fn send_nmt_command(bus: &mut CanOpenSocket, node_id: u8, command: NmtCommand, timeout: Duration) -> Result<(), NmtError> {
+	log::debug!("Sending NMT command {command:?} to node 0x{node_id:02X} (timeout {timeout:?})");
+	let command_frame = CanFrame::new(
+		NMT_COB_ID,
+		&[command as u8, node_id],
+		None,
+	).unwrap();
+	bus.socket.send(&command_frame)
+		.await
+		.map_err(NmtError::SendFailed)?;
 
-		let expected = command.expected_state();
-		let frame = self.recv_new_by_can_id(heartbeat_id(node_id), timeout)
-			.await
-			.map_err(NmtError::RecvFailed)?
-			.ok_or(NmtError::Timeout)?;
-		let state = parse_heartbeat(&frame)?;
-		log::debug!("Received heartbeat message from node 0x{node_id:02X} with state: {state:?}");
-		if state == command.expected_state() {
-			Ok(())
-		} else {
-			Err(UnexpectedState { expected, actual: state }.into())
-		}
+	let expected = command.expected_state();
+	let frame = bus.recv_new_by_can_id(heartbeat_id(node_id), timeout)
+		.await
+		.map_err(NmtError::RecvFailed)?
+		.ok_or(NmtError::Timeout)?;
+	let state = parse_heartbeat(&frame)?;
+	log::debug!("Received heartbeat message from node 0x{node_id:02X} with state: {state:?}");
+	if state == command.expected_state() {
+		Ok(())
+	} else {
+		Err(UnexpectedState { expected, actual: state }.into())
 	}
 }
 
