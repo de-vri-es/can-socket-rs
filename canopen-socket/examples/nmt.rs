@@ -33,6 +33,10 @@ enum Command {
 
 #[tokio::main]
 async fn main() {
+	env_logger::builder()
+		.filter_module(module_path!(), log::LevelFilter::Info)
+		.parse_default_env()
+		.init();
 	if let Err(()) = do_main(clap::Parser::parse()).await {
 		std::process::exit(1);
 	}

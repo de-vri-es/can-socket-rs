@@ -99,6 +99,7 @@ pub struct UnexpectedState {
 impl CanOpenSocket {
 	/// Send an NMT command and wait for the device to go into the specified state.
 	pub async fn send_nmt_command(&mut self, node_id: u8, command: NmtCommand, timeout: Duration) -> Result<(), NmtError> {
+		log::debug!("Sending NMT command {command:?} to node 0x{node_id:02X} (timeout {timeout:?})");
 		let command_frame = CanFrame::new(
 			NMT_COB_ID,
 			&[command as u8, node_id],
@@ -114,6 +115,7 @@ impl CanOpenSocket {
 			.map_err(NmtError::RecvFailed)?
 			.ok_or(NmtError::Timeout)?;
 		let state = parse_heartbeat(&frame)?;
+		log::debug!("Received heartbeat message from node 0x{node_id:02X} with state: {state:?}");
 		if state == command.expected_state() {
 			Ok(())
 		} else {
