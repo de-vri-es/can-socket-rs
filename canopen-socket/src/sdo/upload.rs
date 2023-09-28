@@ -37,7 +37,7 @@ pub async fn sdo_upload(
 
 		let len = match InitiateUploadResponse::parse(&response)? {
 			InitiateUploadResponse::Expedited(data) => {
-				log::debug!("Received SDO expidited upload response from node 0x{node_id:02X}: {data:02X?}");
+				log::debug!("Received SDO expedited upload response from node 0x{node_id:02X}: {data:02X?}");
 				return Ok(data.into());
 			}
 			InitiateUploadResponse::Segmented(len) => {
@@ -128,7 +128,7 @@ fn make_sdo_upload_segment_request(address: SdoAddress, node_id: u8, toggle: boo
 
 /// An SDO initiate upload response.
 enum InitiateUploadResponse<'a> {
-	/// An expidited response containing the actual data.
+	/// An expedited response containing the actual data.
 	Expedited(&'a [u8]),
 
 	/// A segmented response containing the length of the data.
@@ -142,17 +142,17 @@ impl<'a> InitiateUploadResponse<'a> {
 		let data = frame.data();
 
 		let n = data[0] >> 2 & 0x03;
-		let expidited = data[0] & 0x02 != 0;
+		let expedited = data[0] & 0x02 != 0;
 		let size_set = data[0] & 0x01 != 0;
 
-		if expidited {
+		if expedited {
 			let len = match size_set {
 				true => 4 - n as usize,
 				false => 4,
 			};
 			Ok(InitiateUploadResponse::Expedited(&data[4..][..len]))
 		} else if !size_set {
-			Err(SdoError::NoExpiditedOrSizeFlag)
+			Err(SdoError::NoExpeditedOrSizeFlag)
 		} else {
 			let len = u32::from_le_bytes(frame.data()[4..8].try_into().unwrap());
 			Ok(InitiateUploadResponse::Segmented(len))

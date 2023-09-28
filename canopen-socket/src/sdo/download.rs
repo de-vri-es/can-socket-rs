@@ -22,7 +22,7 @@ pub async fn sdo_download(
 ) -> Result<(), SdoError> {
 	// Can write in a single frame.
 	if data.len() <= 4 {
-		sdo_download_expidited(
+		sdo_download_expedited(
 			bus,
 			address,
 			node_id,
@@ -42,8 +42,8 @@ pub async fn sdo_download(
 	}
 }
 
-/// Perform an expidited SDO download (write) to the server.
-async fn sdo_download_expidited(
+/// Perform an expedited SDO download (write) to the server.
+async fn sdo_download_expedited(
 	bus: &mut CanOpenSocket,
 	address: SdoAddress,
 	node_id: u8,
@@ -51,12 +51,12 @@ async fn sdo_download_expidited(
 	data: &[u8],
 	timeout: Duration,
 ) -> Result<(), SdoError> {
-	log::debug!("Sending initiate expidited download request");
+	log::debug!("Sending initiate expedited download request");
 	log::debug!("├─ SDO: command: 0x{:04X}, response: 0x{:04X}", address.command_address(), address.response_address());
 	log::debug!("├─ Node ID: {node_id:?}");
 	log::debug!("├─ Object: index = 0x{:04X}, subindex = 0x{:02X}", object.index, object.subindex);
 	log::debug!("└─ Timeout: {timeout:?}");
-	let command = make_sdo_expidited_download_command(address, node_id, object, data);
+	let command = make_sdo_expedited_download_command(address, node_id, object, data);
 	bus.socket.send(&command).await
 		.map_err(SdoError::SendFailed)?;
 
@@ -139,9 +139,9 @@ async fn sdo_download_segmented(
 	}
 }
 
-/// Make an SDO initiate expidited download command.
+/// Make an SDO initiate expedited download command.
 #[allow(clippy::get_first)]
-fn make_sdo_expidited_download_command(
+fn make_sdo_expedited_download_command(
 	address: SdoAddress,
 	node_id: u8,
 	object: ObjectIndex,
@@ -151,7 +151,7 @@ fn make_sdo_expidited_download_command(
 	let n = 4 - data.len() as u8;
 	let object_index = object.index.to_le_bytes();
 	let data: [u8; 8] = [
-		u8::from(ClientCommand::InitiateDownload) << 5 | n << 2 | 0x03, // 0x03 means expidited and size-set flags enabled.
+		u8::from(ClientCommand::InitiateDownload) << 5 | n << 2 | 0x03, // 0x03 means expedited and size-set flags enabled.
 		object_index[0],
 		object_index[1],
 		object.subindex,
@@ -174,7 +174,7 @@ fn make_sdo_initiate_segmented_download_command(
 	let len = len.to_le_bytes();
 	let object_index = object.index.to_le_bytes();
 	let data: [u8; 8] = [
-		u8::from(ClientCommand::InitiateDownload) << 5 | 0x01, // 0x01 means not expidited, size-set enabled.
+		u8::from(ClientCommand::InitiateDownload) << 5 | 0x01, // 0x01 means not expedited, size-set enabled.
 		object_index[0],
 		object_index[1],
 		object.subindex,
@@ -202,7 +202,7 @@ fn make_sdo_segment_download_command(
 	let n = 7 - data.len() as u8;
 	let c = u8::from(complete);
 	let data: [u8; 8] = [
-		ccs << 5 | t << 4 | n << 1 | c, // 0x01 means not expidited, size-set enabled.
+		ccs << 5 | t << 4 | n << 1 | c, // 0x01 means not expedited, size-set enabled.
 		data.get(0).copied().unwrap_or(0),
 		data.get(1).copied().unwrap_or(0),
 		data.get(2).copied().unwrap_or(0),

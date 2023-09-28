@@ -25,8 +25,8 @@ pub enum SdoError {
 	MalformedResponse(#[from] MalformedResponse),
 
 	/// The flags on the message are not valid.
-	#[error("Invalid flags in server response: neither the expidited nor the size flags is set")]
-	NoExpiditedOrSizeFlag,
+	#[error("Invalid flags in server response: neither the expedited nor the size flags is set")]
+	NoExpeditedOrSizeFlag,
 
 	/// The toggle flag is not in the expected state.
 	#[error("Invalid toggle flag in server response")]
