@@ -62,8 +62,8 @@ async fn do_main(options: Options) -> Result<(), ()> {
 		.map_err(|e| log::error!("Failed to create CAN socket for interface {}: {e}", options.interface))?;
 	let mut socket = CanOpenSocket::new(socket);
 
-	let data = socket.read_sdo(SdoAddress::standard(), options.node_id, options.index, options.subindex, options.timeout).await
-		.map_err(|e| log::error!("{e:?}"))?;
+	let data = socket.sdo_upload(SdoAddress::standard(), options.node_id, options.index, options.subindex, options.timeout).await
+		.map_err(|e| log::error!("{e}"))?;
 
 	display_data(options.format, &data)?;
 	Ok(())

@@ -113,3 +113,27 @@ async fn send_abort_transfer_command(
 	bus.socket.send(&command).await
 		.map_err(SdoError::SendFailed)
 }
+
+impl std::fmt::Display for ClientCommand {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			ClientCommand::SegmentDownload => write!(f, "download-segment"),
+			ClientCommand::InitiateDownload => write!(f, "initiate-download"),
+			ClientCommand::InitiateUpload => write!(f, "initiate-upload"),
+			ClientCommand::SegmentUpload => write!(f, "upload-segment"),
+			ClientCommand::AbortTransfer => write!(f, "abort-transfer"),
+		}
+	}
+}
+
+impl std::fmt::Display for ServerCommand {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			ServerCommand::SegmentDownload => write!(f, "download-segment"),
+			ServerCommand::InitiateDownload => write!(f, "initiate-download"),
+			ServerCommand::InitiateUpload => write!(f, "initiate-upload"),
+			ServerCommand::SegmentUpload => write!(f, "upload-segment"),
+			ServerCommand::AbortTransfer => write!(f, "abort-transfer"),
+		}
+	}
+}
