@@ -3,12 +3,16 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::time::Duration;
 
-use can_socket::CanFrame;
+use can_socket::{CanFrame, CanBaseId};
 use crate::CanOpenSocket;
 
 const NMT_COB_ID: u8 = 0x000;
 
 const FUNCTION_HEARTBEAT: u16 = 0x700;
+
+fn heartbeat_id(node_id: u8) -> CanBaseId {
+	CanBaseId::new(FUNCTION_HEARTBEAT | u16::from(node_id)).unwrap()
+}
 
 
 /// The NMT state of a CANopen device.
@@ -105,7 +109,7 @@ impl CanOpenSocket {
 			.map_err(NmtError::SendFailed)?;
 
 		let expected = command.expected_state();
-		let frame = self.recv_new_by_funtion_and_node(FUNCTION_HEARTBEAT, node_id, timeout)
+		let frame = self.recv_new_by_can_id(heartbeat_id(node_id), timeout)
 			.await
 			.map_err(NmtError::RecvFailed)?
 			.ok_or(NmtError::Timeout)?;

@@ -73,8 +73,8 @@ impl CanOpenSocket {
 	///
 	/// Messages already in the read queue are not returned.
 	/// If a message does not match the filter, it is added to the read queue.
-	async fn recv_new_by_funtion_and_node(&mut self, function_code: u16, node_id: u8, timeout: Duration) -> std::io::Result<Option<CanFrame>> {
-		self.recv_new_filtered(|id| id.function_code() == function_code && id.node_id() == node_id, timeout).await
+	async fn recv_new_by_can_id(&mut self, can_id: CanBaseId, timeout: Duration) -> std::io::Result<Option<CanFrame>> {
+		self.recv_new_filtered(|id| id == can_id, timeout).await
 	}
 }
 
