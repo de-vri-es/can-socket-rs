@@ -5,9 +5,11 @@
 
 use can_socket::tokio::CanSocket;
 use can_socket::{CanFrame, CanBaseId};
+use std::num::NonZeroU8;
 use std::time::Duration;
 
 mod id;
+mod sync;
 pub use id::CanBaseIdExt;
 
 pub mod nmt;
@@ -38,7 +40,6 @@ impl CanOpenSocket {
 	pub fn new(can_socket: CanSocket) -> Self {
 		Self {
 			socket: can_socket,
-			// read_queue: Vec::new(),
 		}
 	}
 
@@ -79,6 +80,14 @@ impl CanOpenSocket {
 		timeout: Duration,
 	) -> Result<(), sdo::SdoError> {
 		sdo::sdo_download(self, address, node_id, object, data, timeout).await
+	}
+
+	/// Send a SYNC command to the CAN network.
+	pub async fn send_sync(
+		&mut self,
+		counter: Option<NonZeroU8>,
+	) -> Result<(), std::io::Error> {
+		sync::send_sync(self, counter).await
 	}
 
 	/// Receive a new message from the CAN bus that that matches the given predicate.

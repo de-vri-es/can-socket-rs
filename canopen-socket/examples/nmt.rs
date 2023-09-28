@@ -5,7 +5,7 @@ use canopen_socket::{CanOpenSocket, nmt::NmtCommand};
 
 #[derive(clap::Parser)]
 struct Options {
-	/// The interface to read from.
+	/// The CAN interface to use.
 	interface: String,
 
 	/// The node to command.

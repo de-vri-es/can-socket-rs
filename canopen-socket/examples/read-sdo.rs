@@ -6,10 +6,10 @@ use std::time::Duration;
 
 #[derive(clap::Parser)]
 struct Options {
-	/// The interface to read from.
+	/// The CAN interface to use.
 	interface: String,
 
-	/// The node to command.
+	/// The node read from.
 	#[clap(value_parser(parse_number::<u8>))]
 	node_id: u8,
 
