@@ -230,7 +230,7 @@ fn parse_segment_download_response(frame: &CanFrame, expected_toggle: bool) -> R
 
 	let toggle = data[0] & 0x10 != 0;
 	if toggle != expected_toggle {
-		return Err(SdoError::MalformedResponse(super::MalformedResponse::InvalidToggleFlag));
+		return Err(SdoError::InvalidToggleFlag);
 	}
 
 	Ok(())

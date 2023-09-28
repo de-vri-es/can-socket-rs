@@ -6,7 +6,6 @@ use crate::CanOpenSocket;
 use super::{
 	SdoAddress,
 	ClientCommand,
-	MalformedResponse,
 	SdoError,
 	ServerCommand,
 	WrongDataCount,
@@ -71,7 +70,7 @@ pub async fn sdo_upload(
 			}
 
 			if data.len() >= len as usize {
-				return Err(MalformedResponse::TooManySegments.into())
+				return Err(SdoError::TooManySegments)
 			}
 
 			toggle = !toggle;
@@ -152,7 +151,7 @@ impl<'a> InitiateUploadResponse<'a> {
 			};
 			Ok(InitiateUploadResponse::Expedited(&data[4..][..len]))
 		} else if !size_set {
-			Err(MalformedResponse::InvalidFlags.into())
+			Err(SdoError::NoExpiditedOrSizeFlag)
 		} else {
 			let len = u32::from_le_bytes(frame.data()[4..8].try_into().unwrap());
 			Ok(InitiateUploadResponse::Segmented(len))
@@ -176,7 +175,7 @@ fn parse_segment_upload_response(frame: &CanFrame, expected_toggle: bool) -> Res
 	let len = 7 - n as usize;
 
 	if toggle != expected_toggle {
-		return Err(SdoError::MalformedResponse(MalformedResponse::InvalidToggleFlag));
+		return Err(SdoError::InvalidToggleFlag);
 	}
 
 	Ok((complete, &data[1..][..len]))
