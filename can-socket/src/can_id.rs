@@ -3,20 +3,20 @@ use crate::error::{InvalidId, ParseIdError};
 pub const MAX_CAN_ID_BASE: u16 = 0x7FF;
 pub const MAX_CAN_ID_EXTENDED: u32 = 0x1FFF_FFFF;
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(C)]
 pub enum CanId {
 	Base(CanBaseId),
 	Extended(CanExtendedId),
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct CanBaseId {
 	id: u16,
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct CanExtendedId {
 	id: u32,
@@ -97,6 +97,34 @@ impl CanExtendedId {
 
 	pub fn as_u32(self) -> u32 {
 		self.id
+	}
+}
+
+impl PartialEq<CanBaseId> for CanId {
+	fn eq(&self, other: &CanBaseId) -> bool {
+		self.as_base()
+			.map(|x| x == *other)
+			.unwrap_or(false)
+	}
+}
+
+impl PartialEq<CanId> for CanBaseId {
+	fn eq(&self, other: &CanId) -> bool {
+		other == self
+	}
+}
+
+impl PartialEq<CanExtendedId> for CanId {
+	fn eq(&self, other: &CanExtendedId) -> bool {
+		self.as_extended()
+			.map(|x| x == *other)
+			.unwrap_or(false)
+	}
+}
+
+impl PartialEq<CanId> for CanExtendedId {
+	fn eq(&self, other: &CanId) -> bool {
+		other == self
 	}
 }
 
