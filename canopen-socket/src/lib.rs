@@ -4,7 +4,7 @@
 #![warn(missing_debug_implementations)]
 
 use can_socket::tokio::CanSocket;
-use can_socket::{CanFrame, CanId, CanBaseId};
+use can_socket::{CanFrame, CanBaseId};
 use std::time::Duration;
 
 mod id;
@@ -82,19 +82,16 @@ impl CanOpenSocket {
 		timeout: Duration,
 	) -> std::io::Result<Option<CanFrame>>
 	where
-		F: FnMut(CanBaseId) -> bool,
+		F: FnMut(&CanFrame) -> bool,
 	{
 		let receive_loop = async move {
 			let mut predicate = predicate;
 			loop {
 				let frame = self.socket.recv().await?;
-				match frame.id() {
-					CanId::Base(id) if predicate(id) => {
-						return Ok(frame)
-					},
-					_ => {
-						self.read_queue.push(frame)
-					}
+				if predicate(&frame) {
+					return Ok(frame);
+				} else {
+					self.read_queue.push(frame)
 				}
 			}
 		};
@@ -110,6 +107,6 @@ impl CanOpenSocket {
 	/// Messages already in the read queue are not returned.
 	/// If a message does not match the filter, it is added to the read queue.
 	async fn recv_new_by_can_id(&mut self, can_id: CanBaseId, timeout: Duration) -> std::io::Result<Option<CanFrame>> {
-		self.recv_new_filtered(|id| id == can_id, timeout).await
+		self.recv_new_filtered(|frame| frame.id().to_base().ok() == Some(can_id), timeout).await
 	}
 }

@@ -1,6 +1,7 @@
 #[derive(Debug)]
 pub enum SdoError {
 	InvalidCanId(can_socket::error::InvalidId),
+	DataLengthExceedsMaximum(DataLengthExceedsMaximum),
 	SendFailed(std::io::Error),
 	RecvFailed(std::io::Error),
 	Timeout,
@@ -8,6 +9,11 @@ pub enum SdoError {
 	MalformedResponse(MalformedResponse),
 	UnexpectedResponse(UnexpectedResponse),
 	WrongDataCount(WrongDataCount),
+}
+
+#[derive(Debug)]
+pub struct DataLengthExceedsMaximum {
+	pub(super) data_len: usize,
 }
 
 #[derive(Debug)]
@@ -133,6 +139,12 @@ pub struct UnexpectedResponse {
 pub struct WrongDataCount {
 	pub(super) expected: usize,
 	pub(super) actual: usize,
+}
+
+impl From<DataLengthExceedsMaximum> for SdoError {
+	fn from(value: DataLengthExceedsMaximum) -> Self {
+		Self::DataLengthExceedsMaximum(value)
+	}
 }
 
 impl From<TransferAborted> for SdoError {
