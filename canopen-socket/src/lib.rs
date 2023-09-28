@@ -19,7 +19,8 @@ pub mod sdo;
 #[allow(missing_debug_implementations)]
 pub struct CanOpenSocket {
 	socket: CanSocket,
-	read_queue: Vec<CanFrame>,
+	// TODO: Save messages for later delivery?
+	// read_queue: Vec<CanFrame>,
 }
 
 impl CanOpenSocket {
@@ -27,7 +28,7 @@ impl CanOpenSocket {
 	pub fn new(can_socket: CanSocket) -> Self {
 		Self {
 			socket: can_socket,
-			read_queue: Vec::new(),
+			// read_queue: Vec::new(),
 		}
 	}
 
@@ -91,7 +92,8 @@ impl CanOpenSocket {
 				if predicate(&frame) {
 					return Ok(frame);
 				} else {
-					self.read_queue.push(frame)
+					// TODO: Save messages for later delivery?
+					// self.read_queue.push(frame)
 				}
 			}
 		};
