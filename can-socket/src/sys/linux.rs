@@ -32,7 +32,9 @@ pub struct CanInterface {
 }
 
 impl CanFrame {
-	pub fn new(id: CanId, data: &[u8], data_length_code: Option<u8>) -> std::io::Result<Self> {
+	pub fn new(id: impl Into<CanId>, data: &[u8], data_length_code: Option<u8>) -> std::io::Result<Self> {
+		let id = id.into();
+
 		if data.len() > 8 {
 			return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "maximum CAN data length is 8 bytes"));
 		}

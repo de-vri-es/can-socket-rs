@@ -96,7 +96,7 @@ impl CanOpenSocket {
 	/// Send an NMT command and wait for the device to go into the specified state.
 	pub async fn send_nmt_command(&mut self, node_id: u8, command: NmtCommand, timeout: Duration) -> Result<(), NmtError> {
 		let command_frame = CanFrame::new(
-			NMT_COB_ID.into(),
+			NMT_COB_ID,
 			&[command as u8, node_id],
 			None,
 		).unwrap();
