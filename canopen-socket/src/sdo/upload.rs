@@ -1,5 +1,5 @@
 use can_socket::CanFrame;
-use std::time::Duration;
+use std::{time::Duration, convert::Infallible};
 
 use crate::{CanOpenSocket, ObjectIndex};
 use super::{
@@ -7,30 +7,57 @@ use super::{
 	ClientCommand,
 	SdoError,
 	ServerCommand,
-	WrongDataCount,
 	check_server_command,
 };
 
+/// Trait for types that can be uploaded from an SDO server.
+pub trait UploadObject: Sized {
+	/// The size of the object, if known.
+	type Buffer: UploadBuffer + Default;
+
+	/// The error type.
+	type Error;
+
+	/// Upload the object from the server.
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error>;
+}
+
+/// Trait for types that can be used as a buffer for receiving SDO data.
+pub trait UploadBuffer {
+	/// Reserve enough space in the buffer.
+	///
+	/// If the buffer can not be resized and it is too small to hold the needed data,
+	/// this function must return a [`super::BufferTooSmall`] error.
+	fn reserve(&mut self, needed: usize) -> Result<(), super::BufferTooSmall>;
+
+	/// Add data to the buffer.
+	///
+	/// The caller guarantees that the total data appended does not exceed the reserved size.
+	///
+	/// This function may panic if the data does exceed the reserved size.
+	fn append(&mut self, data: &[u8]);
+}
 
 /// Perform a SDO upload from the server.
-pub async fn sdo_upload(
+pub(crate) async fn sdo_upload<Buffer: UploadBuffer>(
 	bus: &mut CanOpenSocket,
-	address: SdoAddress,
 	node_id: u8,
+	sdo: SdoAddress,
 	object: ObjectIndex,
+	buffer: &mut Buffer,
 	timeout: Duration,
-) -> Result<Vec<u8>, SdoError> {
+) -> Result<usize, SdoError> {
 	log::debug!("Sending initiate upload request");
-	log::debug!("├─ SDO: command: 0x{:04X}, response: 0x{:04X}", address.command_address(), address.response_address());
 	log::debug!("├─ Node ID: {node_id:?}");
+	log::debug!("├─ SDO: command: 0x{:04X}, response: 0x{:04X}", sdo.command_address(), sdo.response_address());
 	log::debug!("├─ Object: index = 0x{:04X}, subindex = 0x{:02X}", object.index, object.subindex);
 	log::debug!("└─ Timeout: {timeout:?}");
-	let command = make_sdo_initiate_upload_request(address, node_id, object);
+	let command = make_sdo_initiate_upload_request(node_id, sdo, object);
 	bus.socket.send(&command).await
 		.map_err(SdoError::SendFailed)?;
 
-	let result = async {
-		let response = bus.recv_new_by_can_id(address.response_id(node_id), timeout)
+	let result: Result<usize, SdoError> = async {
+		let response = bus.recv_new_by_can_id(sdo.response_id(node_id), timeout)
 			.await
 			.map_err(SdoError::RecvFailed)?
 			.ok_or(SdoError::Timeout)?;
@@ -38,7 +65,9 @@ pub async fn sdo_upload(
 		let len = match InitiateUploadResponse::parse(&response)? {
 			InitiateUploadResponse::Expedited(data) => {
 				log::debug!("Received SDO expedited upload response from node 0x{node_id:02X}: {data:02X?}");
-				return Ok(data.into());
+				buffer.reserve(data.len())?;
+				buffer.append(data);
+				return Ok(data.len());
 			}
 			InitiateUploadResponse::Segmented(len) => {
 				log::debug!("Received SDO initiate segmented upload response from node 0x{node_id:02X} with data length 0x{len:04X}");
@@ -46,49 +75,55 @@ pub async fn sdo_upload(
 			},
 		};
 
-		let mut data = Vec::with_capacity(len);
+		buffer.reserve(len)?;
+		let mut total_len = 0;
+
 		let mut toggle = false;
 		loop {
 			log::debug!("Sending SDO segment upload request to node 0x{node_id:02X}");
-			let command = make_sdo_upload_segment_request(address, node_id, toggle);
+			let command = make_sdo_upload_segment_request(sdo, node_id, toggle);
 			bus.socket.send(&command)
 				.await
 				.map_err(SdoError::SendFailed)?;
-			let response = bus.recv_new_by_can_id(address.response_id(node_id), timeout)
+			let response = bus.recv_new_by_can_id(sdo.response_id(node_id), timeout)
 				.await
 				.map_err(SdoError::RecvFailed)?
 				.ok_or(SdoError::Timeout)?;
 			let (complete, segment_data) = parse_segment_upload_response(&response, toggle)?;
 			log::debug!("Received SDO segment upload response with data: {segment_data:02X?}");
 			log::debug!("└─ Last segment needed: {complete}");
-			data.extend_from_slice(segment_data);
+
+			if total_len + segment_data.len() >= len as usize {
+				return Err(super::WrongDataCount {
+					expected: len,
+					actual: total_len + segment_data.len(),
+				}.into())
+			}
+			buffer.append(segment_data);
+			total_len += segment_data.len();
 
 			if complete {
 				break;
 			}
 
-			if data.len() >= len as usize {
-				return Err(SdoError::TooManySegments)
-			}
-
 			toggle = !toggle;
 		}
 
-		if data.len() != len {
-			return Err(WrongDataCount {
+		if total_len != len {
+			return Err(super::WrongDataCount {
 				expected: len,
-				actual: data.len(),
-			}.into())
+				actual: total_len,
+			}.into());
 		}
 
-		Ok(data)
+		Ok(total_len)
 	}.await;
 
 	match result {
 		Err(e) => {
 			super::send_abort_transfer_command(
 				bus,
-				address,
+				sdo,
 				node_id,
 				object,
 				crate::sdo::AbortReason::GeneralError,
@@ -101,8 +136,8 @@ pub async fn sdo_upload(
 
 /// Make an SDO initiate upload request.
 fn make_sdo_initiate_upload_request(
-	address: SdoAddress,
 	node_id: u8,
+	sdo: SdoAddress,
 	object: ObjectIndex,
 ) -> CanFrame {
 	let object_index = object.index.to_le_bytes();
@@ -113,7 +148,7 @@ fn make_sdo_initiate_upload_request(
 		object.subindex,
 		0, 0, 0, 0,
 	];
-	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
+	CanFrame::new(sdo.command_id(node_id), &data, None).unwrap()
 }
 
 /// Make an SDO upload segment request.
@@ -180,4 +215,178 @@ fn parse_segment_upload_response(frame: &CanFrame, expected_toggle: bool) -> Res
 	}
 
 	Ok((complete, &data[1..][..len]))
+}
+
+impl UploadBuffer for Vec<u8> {
+	fn reserve(&mut self, needed: usize) -> Result<(), super::BufferTooSmall> {
+		Vec::reserve(self, needed);
+		Ok(())
+	}
+
+	fn append(&mut self, data: &[u8]) {
+		self.extend_from_slice(data)
+	}
+}
+
+impl<'a> UploadBuffer for &'a mut [u8] {
+	fn reserve(&mut self, needed: usize) -> Result<(), super::BufferTooSmall> {
+		if needed <= self.len() {
+			Ok(())
+		} else {
+			Err(super::BufferTooSmall {
+				available: self.len(),
+				needed,
+			})
+		}
+	}
+
+	fn append(&mut self, data: &[u8]) {
+		self[..data.len()].copy_from_slice(data);
+		*self = &mut std::mem::take(self)[data.len()..];
+	}
+}
+
+/// Fixed size buffer for uploading small objects from an SDO server.
+#[derive(Debug)]
+pub struct FixedBuffer<const N: usize> {
+	/// The actual buffer.
+	data: [u8; N],
+
+	/// The number of bytes written to the buffer so far.
+	written: usize,
+}
+
+impl<const N: usize> Default for FixedBuffer<N> {
+	fn default() -> Self {
+		Self {
+			data: [0u8; N],
+			written: 0,
+		}
+	}
+}
+
+impl<const N: usize> UploadBuffer for FixedBuffer<N> {
+	fn reserve(&mut self, needed: usize) -> Result<(), super::BufferTooSmall> {
+		if needed <= self.data.len() - self.written {
+			Ok(())
+		} else {
+			Err(super::BufferTooSmall {
+				available: self.data.len() - self.written,
+				needed,
+			})
+		}
+	}
+
+	fn append(&mut self, data: &[u8]) {
+		self.data[self.written..][..data.len()].copy_from_slice(data);
+		self.written += data.len()
+	}
+}
+
+impl UploadObject for Vec<u8> {
+	type Buffer = Vec<u8>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(buffer)
+	}
+}
+
+impl UploadObject for String {
+	type Buffer = Vec<u8>;
+	type Error = std::string::FromUtf8Error;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		String::from_utf8(buffer)
+	}
+}
+
+impl UploadObject for u8 {
+	type Buffer = FixedBuffer<1>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for i8 {
+	type Buffer = FixedBuffer<1>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for u16 {
+	type Buffer = FixedBuffer<2>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for i16 {
+	type Buffer = FixedBuffer<2>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for u32 {
+	type Buffer = FixedBuffer<4>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for i32 {
+	type Buffer = FixedBuffer<4>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for u64 {
+	type Buffer = FixedBuffer<8>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for i64 {
+	type Buffer = FixedBuffer<8>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for u128 {
+	type Buffer = FixedBuffer<16>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
+}
+
+impl UploadObject for i128 {
+	type Buffer = FixedBuffer<16>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(Self::from_le_bytes(buffer.data))
+	}
 }

@@ -1,5 +1,7 @@
 //! Service Data Object (SDO) types and utilities.
 
+use std::time::Duration;
+
 use can_socket::CanFrame;
 
 use crate::{CanOpenSocket, ObjectIndex};
@@ -11,10 +13,10 @@ mod error;
 pub use error::*;
 
 mod upload;
-pub(crate) use upload::*;
+pub use upload::*;
 
 mod download;
-pub(crate) use download::*;
+pub use download::*;
 
 /// SDO command that can be sent by a client.
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]

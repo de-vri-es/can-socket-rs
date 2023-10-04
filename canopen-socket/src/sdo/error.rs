@@ -1,3 +1,15 @@
+/// Error that can occur during a typed SDO upload.
+#[derive(Debug)]
+#[derive(thiserror::Error)]
+#[error("{0}")]
+pub enum UploadError<E> {
+	/// An error occured during the SDO transfer.
+	UploadFailed(SdoError),
+
+	/// The parsing of the received data failed.
+	ParseFailed(E),
+}
+
 /// Error that can occur during an SDO transfer.
 #[derive(Debug)]
 #[derive(thiserror::Error)]
@@ -18,11 +30,17 @@ pub enum SdoError {
 	#[error("Timeout while waiting for response")]
 	Timeout,
 
+	/// The buffer is to small to receive the requested object.
+	BufferTooSmall(#[from] BufferTooSmall),
+
 	/// The transfer was aborted by the SDO server.
 	TransferAborted(#[from] TransferAborted),
 
 	/// The response from the server does not follow the correct format for an SDO response.
 	MalformedResponse(#[from] MalformedResponse),
+
+	/// Received an SDO response with an unexpected server command.
+	UnexpectedResponse(#[from] UnexpectedResponse),
 
 	/// The flags on the message are not valid.
 	#[error("Invalid flags in server response: neither the expedited nor the size flags is set")]
@@ -31,13 +49,6 @@ pub enum SdoError {
 	/// The toggle flag is not in the expected state.
 	#[error("Invalid toggle flag in server response")]
 	InvalidToggleFlag,
-
-	/// The server is giving us more segments than it should.
-	#[error("Received too many data segments from server")]
-	TooManySegments,
-
-	/// Received an SDO response with an unexpected server command.
-	UnexpectedResponse(#[from] UnexpectedResponse),
 
 	/// Received a different amount of data then advertised by the server.
 	WrongDataCount(#[from] WrongDataCount),
@@ -50,6 +61,18 @@ pub enum SdoError {
 pub struct DataLengthExceedsMaximum {
 	/// The length of the data.
 	pub(super) data_len: usize,
+}
+
+/// The buffer is too small to receive the requested object.
+#[derive(Debug)]
+#[derive(thiserror::Error)]
+#[error("Buffer is too small to receive the requested data, buffer size is {available} bytes, need atleast {needed}")]
+pub struct BufferTooSmall {
+	/// The buffer size.
+	pub(super) available: usize,
+
+	/// The minimum buffer size needed to receive the object.
+	pub(super) needed: usize,
 }
 
 /// The transfer was aborted by the SDO server.

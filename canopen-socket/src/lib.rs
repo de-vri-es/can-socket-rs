@@ -58,29 +58,51 @@ impl CanOpenSocket {
 	///
 	/// Note that upload means "upload to server".
 	/// Most people outside of [CiA](https://can-cia.org/) would call this a download.
-	pub async fn sdo_upload(
+	pub async fn sdo_upload_raw(
 		&mut self,
-		address: sdo::SdoAddress,
 		node_id: u8,
+		sdo: sdo::SdoAddress,
+		object: ObjectIndex,
+		buffer: &mut [u8],
+		timeout: Duration,
+	) -> Result<usize, sdo::SdoError> {
+		let mut buffer = buffer;
+		sdo::sdo_upload(self, node_id, sdo, object, &mut buffer, timeout).await
+	}
+
+	/// Read an object dictionary value by performing an upload from a SDO server.
+	///
+	/// Note that upload means "upload to server".
+	/// Most people outside of [CiA](https://can-cia.org/) would call this a download.
+	pub async fn sdo_upload<T: sdo::UploadObject>(
+		&mut self,
+		node_id: u8,
+		sdo: sdo::SdoAddress,
 		object: ObjectIndex,
 		timeout: Duration,
-	) -> Result<Vec<u8>, sdo::SdoError> {
-		sdo::sdo_upload(self, address, node_id, object, timeout).await
+	) -> Result<T, sdo::UploadError<T::Error>> {
+		let mut buffer = <T as sdo::UploadObject>::Buffer::default();
+		sdo::sdo_upload(self, node_id, sdo, object, &mut buffer, timeout).await
+			.map_err(sdo::UploadError::UploadFailed)?;
+		T::parse_buffer(buffer)
+			.map_err(sdo::UploadError::ParseFailed)
 	}
 
 	/// Write an object dictionary value by performing a download to a SDO server.
 	///
 	/// Note that download means "download to server".
 	/// Most people outside of [CiA](https://can-cia.org/) would call this an upload.
-	pub async fn sdo_download(
+	pub async fn sdo_download<T: sdo::DownloadObject>(
 		&mut self,
-		address: sdo::SdoAddress,
 		node_id: u8,
+		sdo: sdo::SdoAddress,
 		object: ObjectIndex,
-		data: &[u8],
+		data: T,
 		timeout: Duration,
 	) -> Result<(), sdo::SdoError> {
-		sdo::sdo_download(self, address, node_id, object, data, timeout).await
+		use std::borrow::Borrow;
+		let buffer = data.to_buffer();
+		sdo::sdo_download(self, node_id, sdo, object, buffer.borrow(), timeout).await
 	}
 
 	/// Send a SYNC command to the CAN network.

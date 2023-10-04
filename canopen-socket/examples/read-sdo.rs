@@ -64,7 +64,7 @@ async fn do_main(options: Options) -> Result<(), ()> {
 	let mut socket = CanOpenSocket::new(socket);
 
 	let object = ObjectIndex::new(options.index, options.subindex);
-	let data = socket.sdo_upload(SdoAddress::standard(), options.node_id, object, options.timeout).await
+	let data: Vec<u8> = socket.sdo_upload(options.node_id, SdoAddress::standard(), object, options.timeout).await
 		.map_err(|e| log::error!("{e}"))?;
 
 	display_data(options.format, &data)?;

@@ -49,7 +49,7 @@ async fn do_main(options: Options) -> Result<(), ()> {
 	let mut socket = CanOpenSocket::new(socket);
 
 	let object = ObjectIndex::new(options.index, options.subindex);
-	socket.sdo_download(SdoAddress::standard(), options.node_id, object, &options.data, options.timeout).await
+	socket.sdo_download(options.node_id, SdoAddress::standard(), object, &options.data, options.timeout).await
 		.map_err(|e| log::error!("{e}"))?;
 	Ok(())
 }
