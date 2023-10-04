@@ -301,6 +301,15 @@ impl UploadObject for String {
 	}
 }
 
+impl<const N: usize> UploadObject for [u8; N] {
+	type Buffer = FixedBuffer<N>;
+	type Error = Infallible;
+
+	fn parse_buffer(buffer: Self::Buffer) -> Result<Self, Self::Error> {
+		Ok(buffer.data)
+	}
+}
+
 impl UploadObject for u8 {
 	type Buffer = FixedBuffer<1>;
 	type Error = Infallible;

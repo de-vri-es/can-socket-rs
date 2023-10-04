@@ -105,6 +105,30 @@ impl CanOpenSocket {
 		sdo::sdo_download(self, node_id, sdo, object, buffer.borrow(), timeout).await
 	}
 
+	/// Get the full PDO configuration of an RPDO of a remote node.
+	pub async fn read_rpdo_configuration(
+		&mut self,
+		node_id: u8,
+		sdo: sdo::SdoAddress,
+		pdo: u16,
+		timeout: Duration,
+	) -> Result<pdo::RpdoConfiguration, pdo::PdoConfigError>
+	{
+		pdo::read_rpdo_configuration(self, node_id, sdo, pdo, timeout).await
+	}
+
+	/// Get the full configuration of a TPDO of a remote node.
+	pub async fn read_tpdo_configuration(
+		&mut self,
+		node_id: u8,
+		sdo: sdo::SdoAddress,
+		pdo: u16,
+		timeout: Duration,
+	) -> Result<pdo::TpdoConfiguration, pdo::PdoConfigError>
+	{
+		pdo::read_tpdo_configuration(self, node_id, sdo, pdo, timeout).await
+	}
+
 	/// Send a SYNC command to the CAN network.
 	pub async fn send_sync(
 		&mut self,

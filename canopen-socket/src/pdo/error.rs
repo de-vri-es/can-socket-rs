@@ -4,7 +4,7 @@ use crate::sdo::SdoError;
 #[derive(Debug)]
 #[derive(thiserror::Error)]
 #[error("{0}")]
-pub enum PdoMappingError {
+pub enum PdoConfigError {
 	/// The PDO number is not valid.
 	InvalidPdoNumber(#[from] InvalidPdoNumber),
 
@@ -23,12 +23,12 @@ pub struct InvalidPdoNumber {
 /// The value for the `nth sync` PDO mode is invalid.
 #[derive(Debug, Clone)]
 #[derive(thiserror::Error)]
-#[error("invalid value for PDO mode `nth sync`: value must be between 2 and 240 (inclusive), but got {value}")]
-pub struct InvalidNthSyncCounter {
+#[error("invalid value for PDO mode `nth sync`: value must be between 1 and 240 (inclusive), but got {value}")]
+pub struct InvalidSyncInterval {
 	pub(super) value: u8,
 }
 
-impl From<crate::sdo::UploadError<std::convert::Infallible>> for PdoMappingError {
+impl From<crate::sdo::UploadError<std::convert::Infallible>> for PdoConfigError {
 	fn from(value: crate::sdo::UploadError<std::convert::Infallible>) -> Self {
 		match value {
 			crate::sdo::UploadError::UploadFailed(e) => e.into(),

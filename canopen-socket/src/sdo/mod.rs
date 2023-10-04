@@ -1,7 +1,5 @@
 //! Service Data Object (SDO) types and utilities.
 
-use std::time::Duration;
-
 use can_socket::CanFrame;
 
 use crate::{CanOpenSocket, ObjectIndex};
