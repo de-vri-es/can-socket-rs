@@ -13,6 +13,7 @@ mod sync;
 pub use id::CanBaseIdExt;
 
 pub mod nmt;
+pub mod pdo;
 pub mod sdo;
 
 /// A CANopen socket.
