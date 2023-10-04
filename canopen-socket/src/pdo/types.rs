@@ -82,13 +82,31 @@ pub struct TpdoCommunicationParameters {
 }
 
 /// A PDO mapping.
-#[derive(Debug, Clone, Eq, PartialEq)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub struct PdoMapping {
 	/// The object to add to the PDO.
 	pub object: ObjectIndex,
 
 	/// The amount of bits of the object to add in the PDO.
 	pub bit_length: u8,
+}
+
+impl PdoMapping {
+	/// Parse a PDO mapping from a `u32` value as stored in the object dictionary.
+	pub fn from_u32(raw: u32) -> Self {
+		let index = (raw >> 16 & 0xFFFF) as u16;
+		let subindex = (raw >> 8 & 0xFF) as u8;
+		let bit_length = (raw & 0xFF) as u8;
+		Self {
+			object: ObjectIndex::new(index, subindex),
+			bit_length,
+		}
+	}
+
+	/// Get the `u32` value of the PDO mapping as stored in the object dictionary.
+	pub fn to_u32(self) -> u32 {
+		u32::from(self.object.index) << 16 | u32::from(self.object.subindex) << 8 | u32::from(self.bit_length)
+	}
 }
 
 /// The transmission type of an RPDO.

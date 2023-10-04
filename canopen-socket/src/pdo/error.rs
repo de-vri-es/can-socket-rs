@@ -8,6 +8,22 @@ pub enum PdoConfigError {
 	/// The PDO number is not valid.
 	InvalidPdoNumber(#[from] InvalidPdoNumber),
 
+	/// The PDO does not support inhibit time.
+	#[error("The PDO does not support the inhibit time parameter")]
+	InhibitTimeNotSupported,
+
+	/// The PDO does not support the event timer.
+	#[error("The PDO does not support the deadline timer parameter")]
+	DeadlineTimerNotSupported,
+
+	/// The PDO does not support the event timer.
+	#[error("The PDO does not support the event timer parameter")]
+	EventTimerNotSupported,
+
+	/// The PDO does not support the start sync parameter
+	#[error("The PDO does not support the start SYNC parameter")]
+	StartSyncNotSupported,
+
 	/// An error occured when trying to access the configuration.
 	SdoError(#[from] SdoError),
 }

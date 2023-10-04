@@ -129,6 +129,58 @@ impl CanOpenSocket {
 		pdo::read_tpdo_configuration(self, node_id, sdo, pdo, timeout).await
 	}
 
+	/// Configure an RPDO of a remote node.
+	pub async fn configure_rpdo(
+		&mut self,
+		node_id: u8,
+		sdo: sdo::SdoAddress,
+		pdo: u16,
+		config: &pdo::RpdoConfiguration,
+		timeout: Duration,
+	) -> Result<(), pdo::PdoConfigError>
+	{
+		pdo::configure_rpdo(self, node_id, sdo, pdo, config, timeout).await
+	}
+
+	/// Configure a TPDO of a remote node.
+	pub async fn configure_tpdo(
+		&mut self,
+		node_id: u8,
+		sdo: sdo::SdoAddress,
+		pdo: u16,
+		config: &pdo::TpdoConfiguration,
+		timeout: Duration,
+	) -> Result<(), pdo::PdoConfigError>
+	{
+		pdo::configure_tpdo(self, node_id, sdo, pdo, config, timeout).await
+	}
+
+	/// Enable or disable an RPDO of a remote node.
+	pub async fn enable_rpdo(
+		&mut self,
+		node_id: u8,
+		sdo: sdo::SdoAddress,
+		pdo: u16,
+		enable: bool,
+		timeout: Duration,
+	) -> Result<(), pdo::PdoConfigError>
+	{
+		pdo::enable_rpdo(self, node_id, sdo, pdo, enable, timeout).await
+	}
+
+	/// Enable or disable a TPDO of a remote node.
+	pub async fn enable_tpdo(
+		&mut self,
+		node_id: u8,
+		sdo: sdo::SdoAddress,
+		pdo: u16,
+		enable: bool,
+		timeout: Duration,
+	) -> Result<(), pdo::PdoConfigError>
+	{
+		pdo::enable_tpdo(self, node_id, sdo, pdo, enable, timeout).await
+	}
+
 	/// Send a SYNC command to the CAN network.
 	pub async fn send_sync(
 		&mut self,

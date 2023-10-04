@@ -147,14 +147,8 @@ pub(crate) async fn read_pdo_mapping(
 	let mut fields = Vec::with_capacity(count.into());
 
 	for i in 1..=count {
-		let field: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(object_index, i), timeout).await?;
-		let index = (field >> 16) as u16;
-		let sub_index = (field >> 8 & 0xFF) as u8;
-		let bit_length = (field & 0xFF) as u8;
-		fields.push(PdoMapping {
-			object: ObjectIndex::new(index, sub_index),
-			bit_length,
-		})
+		let mapping: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(object_index, i), timeout).await?;
+		fields.push(PdoMapping::from_u32(mapping))
 	}
 
 	Ok(fields)
