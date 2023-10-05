@@ -22,5 +22,6 @@ pub(crate) async fn send_sync(
 			CanFrame::new(SYNC_DEFAULT_COB_ID, &[], None).unwrap()
 		}
 	};
+
 	bus.socket.send(&frame).await
 }

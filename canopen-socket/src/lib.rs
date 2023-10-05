@@ -6,7 +6,7 @@
 use can_socket::tokio::CanSocket;
 use can_socket::{CanFrame, CanBaseId};
 use std::num::NonZeroU8;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 mod id;
 mod sync;
@@ -42,6 +42,28 @@ impl CanOpenSocket {
 		Self {
 			socket: can_socket,
 		}
+	}
+
+	/// Receive a raw CAN frame with a deadline.
+	///
+	/// Returns [`None`] if the deadline expires before a frame arrives.
+	/// Returns `Some(Err(...))` if the underlying CAN socket gives an error.
+	pub async fn recv_frame_deadline(
+		&mut self,
+		deadline: Instant,
+	) -> Option<std::io::Result<can_socket::CanFrame>> {
+		if Instant::now() >= deadline {
+			return None;
+		}
+		tokio::time::timeout_at(deadline.into(), self.socket.recv()).await.ok()
+	}
+
+	/// Send a raw CAN frame.
+	pub async fn send_frame(
+		&mut self,
+		frame: &CanFrame,
+	) -> std::io::Result<()> {
+		self.socket.send(frame).await
 	}
 
 	/// Send an NMT command and wait for the device to go into the specified state.
