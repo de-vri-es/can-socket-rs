@@ -1,5 +1,5 @@
 use can_socket::tokio::CanSocket;
-use canopen_socket::CanOpenSocket;
+use canopen_tokio::CanOpenSocket;
 use std::num::NonZeroU8;
 use std::time::{Instant, Duration};
 

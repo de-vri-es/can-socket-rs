@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use can_socket::tokio::CanSocket;
-use canopen_socket::{CanOpenSocket, nmt::NmtCommand};
+use canopen_tokio::{CanOpenSocket, nmt::NmtCommand};
 
 #[derive(clap::Parser)]
 struct Options {

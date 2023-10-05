@@ -1,8 +1,8 @@
 use can_socket::CanId;
 use can_socket::tokio::CanSocket;
-use canopen_socket::{CanOpenSocket, ObjectIndex};
-use canopen_socket::pdo::{PdoMapping, RpdoTransmissionType, TpdoTransmissionType};
-use canopen_socket::sdo::SdoAddress;
+use canopen_tokio::{CanOpenSocket, ObjectIndex};
+use canopen_tokio::pdo::{PdoMapping, RpdoTransmissionType, TpdoTransmissionType};
+use canopen_tokio::sdo::SdoAddress;
 use std::time::Duration;
 
 #[derive(clap::Parser)]

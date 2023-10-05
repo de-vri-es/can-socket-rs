@@ -1,14 +1,17 @@
 use can_socket::{CanFrame, CanId};
 use can_socket::tokio::CanSocket;
-use canopen_socket::{CanOpenSocket, ObjectIndex};
-use canopen_socket::pdo::{
+use canopen_tokio::nmt::NmtCommand;
+use canopen_tokio::{CanOpenSocket, ObjectIndex};
+use canopen_tokio::pdo::{
 	PdoMapping,
+	RpdoCommunicationParameters,
 	RpdoConfiguration,
 	RpdoTransmissionType,
+	TpdoCommunicationParameters,
 	TpdoConfiguration,
 	TpdoTransmissionType,
 };
-use canopen_socket::sdo::SdoAddress;
+use canopen_tokio::sdo::SdoAddress;
 use std::time::{Duration, Instant};
 
 #[derive(clap::Parser)]
@@ -78,12 +81,12 @@ async fn do_main(options: Options) -> Result<(), ()> {
 	let sdo = SdoAddress::standard();
 
 	// Reset the motor controller.
-	socket.send_nmt_command(node_id, canopen_socket::nmt::NmtCommand::ResetCommunication, timeout).await
+	socket.send_nmt_command(node_id, NmtCommand::ResetCommunication, timeout).await
 		.map_err(|e| log::error!("Failed to reset communication of node {node_id}: {e}"))?;
 
 	// Configure TPDO 0.
 	let tpdo0_config = TpdoConfiguration {
-		communication: canopen_socket::pdo::TpdoCommunicationParameters {
+		communication: TpdoCommunicationParameters {
 			enabled: true,
 			rtr_allowed: true,
 			cob_id: CanId::new(0x181).unwrap(),
@@ -115,7 +118,7 @@ async fn do_main(options: Options) -> Result<(), ()> {
 
 	// Configure RPDO 0.
 	let rpdo0_config = RpdoConfiguration {
-		communication: canopen_socket::pdo::RpdoCommunicationParameters {
+		communication: RpdoCommunicationParameters {
 			enabled: true,
 			cob_id: CanId::new(0x201).unwrap(),
 			mode: RpdoTransmissionType::sync(), // Actuate the PDO value at every SYNC.
@@ -134,7 +137,7 @@ async fn do_main(options: Options) -> Result<(), ()> {
 		.map_err(|e| log::error!("Failed to configure RPDO 0 of node {node_id}: {e}"))?;
 
 	// Start the motor controller.
-	socket.send_nmt_command(node_id, canopen_socket::nmt::NmtCommand::Start, timeout).await
+	socket.send_nmt_command(node_id, NmtCommand::Start, timeout).await
 		.map_err(|e| log::error!("Failed to start node {node_id}: {e}"))?;
 
 	// Set maximum motor current.

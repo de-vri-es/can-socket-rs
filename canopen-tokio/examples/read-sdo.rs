@@ -1,7 +1,7 @@
 use can_socket::tokio::CanSocket;
-use canopen_socket::CanOpenSocket;
-use canopen_socket::ObjectIndex;
-use canopen_socket::sdo::SdoAddress;
+use canopen_tokio::CanOpenSocket;
+use canopen_tokio::ObjectIndex;
+use canopen_tokio::sdo::SdoAddress;
 use std::time::Duration;
 
 #[derive(clap::Parser)]

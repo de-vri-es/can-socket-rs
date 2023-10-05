@@ -1,6 +1,7 @@
 use can_socket::tokio::CanSocket;
-use canopen_socket::CanOpenSocket;
-use canopen_socket::sdo::SdoAddress;
+use canopen_tokio::CanOpenSocket;
+use canopen_tokio::ObjectIndex;
+use canopen_tokio::sdo::SdoAddress;
 use std::time::Duration;
 
 #[derive(clap::Parser)]
@@ -8,33 +9,27 @@ struct Options {
 	/// The CAN interface to use.
 	interface: String,
 
-	/// The node read from.
+	/// The node to write to.
 	#[clap(value_parser(parse_number::<u8>))]
 	node_id: u8,
 
-	/// Configure the specified RPDO.
-	#[clap(long)]
-	#[clap(group = "pdo")]
+	/// The object index to write to.
 	#[clap(value_parser(parse_number::<u16>))]
-	rpdo: Option<u16>,
+	index: u16,
 
-	/// Configure the specified TPDO.
-	#[clap(long)]
-	#[clap(group = "pdo")]
-	#[clap(value_parser(parse_number::<u16>))]
-	tpdo: Option<u16>,
+	/// The object subindex to write to.
+	#[clap(value_parser(parse_number::<u8>))]
+	subindex: u8,
 
-	/// Timeout in seconds for individual SDO operations.
+	/// The data to write.
+	#[clap(value_parser(parse_number::<u8>))]
+	data: Vec<u8>,
+
+	/// Timeout in seconds for receiving the reply.
 	#[clap(long, short)]
 	#[clap(value_parser(parse_timeout))]
 	#[clap(default_value = "1")]
 	timeout: Duration,
-}
-
-#[derive(Clone, clap::ValueEnum)]
-enum PdoType {
-	Rpdo,
-	Tpdo,
 }
 
 #[tokio::main]
@@ -53,16 +48,9 @@ async fn do_main(options: Options) -> Result<(), ()> {
 		.map_err(|e| log::error!("Failed to create CAN socket for interface {}: {e}", options.interface))?;
 	let mut socket = CanOpenSocket::new(socket);
 
-	if let Some(pdo) = options.rpdo {
-		let config = socket.read_rpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
-			.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", pdo, options.node_id))?;
-		println!("{config:#?}");
-	} else if let Some(pdo) = options.tpdo {
-		let config = socket.read_tpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
-			.map_err(|e| log::error!("Failed to read configuration of TPDO {} of node {}: {e}", pdo, options.node_id))?;
-		println!("{config:#?}");
-	}
-
+	let object = ObjectIndex::new(options.index, options.subindex);
+	socket.sdo_download(options.node_id, SdoAddress::standard(), object, &options.data, options.timeout).await
+		.map_err(|e| log::error!("{e}"))?;
 	Ok(())
 }
 
@@ -93,3 +81,4 @@ where
 	T::try_from(value)
 		.map_err(|e| format!("value out of range: {e}"))
 }
+

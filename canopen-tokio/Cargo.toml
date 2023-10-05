@@ -1,0 +1,22 @@
+[package]
+name = "canopen-tokio"
+description = "low level CANopen for tokio"
+version = "0.1.0"
+keywords = ["CANopen", "CAN", "fieldbus", "CANbus", "network"]
+categories = ["os", "hardware-support", "network-programming", "science::robotics"]
+repository = "https://github.com/de-vri-es/can-socket-rs/tree/main/can-socket"
+documentation = "https://docs.rs/canopen-socket"
+
+edition = "2021"
+
+[dependencies]
+can-socket = { version = "0.0.1-alpha2", path = "../can-socket", features = ["tokio"] }
+log = "0.4.20"
+num_enum = "0.7.0"
+thiserror = "1.0.49"
+tokio = { version = "1.32.0", features = ["time"] }
+
+[dev-dependencies]
+clap = { version = "4.4.4", features = ["derive"] }
+env_logger = "0.10.0"
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
