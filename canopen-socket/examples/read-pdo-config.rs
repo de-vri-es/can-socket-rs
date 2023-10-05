@@ -12,14 +12,17 @@ struct Options {
 	#[clap(value_parser(parse_number::<u8>))]
 	node_id: u8,
 
-	/// The type of PDO.
-	#[clap(value_enum)]
-	#[clap(name = "type")]
-	kind: PdoType,
-
-	/// The PDO number to read the mapping of.
+	/// Configure the specified RPDO.
+	#[clap(long)]
+	#[clap(group = "pdo")]
 	#[clap(value_parser(parse_number::<u16>))]
-	pdo: u16,
+	rpdo: Option<u16>,
+
+	/// Configure the specified TPDO.
+	#[clap(long)]
+	#[clap(group = "pdo")]
+	#[clap(value_parser(parse_number::<u16>))]
+	tpdo: Option<u16>,
 
 	/// Timeout in seconds for individual SDO operations.
 	#[clap(long, short)]
@@ -50,17 +53,14 @@ async fn do_main(options: Options) -> Result<(), ()> {
 		.map_err(|e| log::error!("Failed to create CAN socket for interface {}: {e}", options.interface))?;
 	let mut socket = CanOpenSocket::new(socket);
 
-	match options.kind {
-		PdoType::Rpdo => {
-			let config = socket.read_rpdo_configuration(options.node_id, SdoAddress::standard(), options.pdo, options.timeout).await
-				.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", options.pdo, options.node_id))?;
-			println!("{config:#?}");
-		},
-		PdoType::Tpdo => {
-			let config = socket.read_tpdo_configuration(options.node_id, SdoAddress::standard(), options.pdo, options.timeout).await
-				.map_err(|e| log::error!("Failed to read configuration of TPDO {} of node {}: {e}", options.pdo, options.node_id))?;
-			println!("{config:#?}");
-		},
+	if let Some(pdo) = options.rpdo {
+		let config = socket.read_rpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
+			.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", pdo, options.node_id))?;
+		println!("{config:#?}");
+	} else if let Some(pdo) = options.tpdo {
+		let config = socket.read_tpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
+			.map_err(|e| log::error!("Failed to read configuration of TPDO {} of node {}: {e}", pdo, options.node_id))?;
+		println!("{config:#?}");
 	}
 
 	Ok(())

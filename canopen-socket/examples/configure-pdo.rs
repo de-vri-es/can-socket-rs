@@ -1,6 +1,7 @@
+use can_socket::CanId;
 use can_socket::tokio::CanSocket;
-use canopen_socket::pdo::PdoMapping;
 use canopen_socket::{CanOpenSocket, ObjectIndex};
+use canopen_socket::pdo::{PdoMapping, RpdoTransmissionType, TpdoTransmissionType};
 use canopen_socket::sdo::SdoAddress;
 use std::time::Duration;
 
@@ -13,14 +14,17 @@ struct Options {
 	#[clap(value_parser(parse_number::<u8>))]
 	node_id: u8,
 
-	/// The type of PDO.
-	#[clap(value_enum)]
-	#[clap(name = "type")]
-	kind: PdoType,
-
-	/// The PDO number to read the mapping of.
+	/// Configure the specified RPDO.
+	#[clap(long)]
+	#[clap(group = "pdo")]
 	#[clap(value_parser(parse_number::<u16>))]
-	pdo: u16,
+	rpdo: Option<u16>,
+
+	/// Configure the specified TPDO.
+	#[clap(long)]
+	#[clap(group = "pdo")]
+	#[clap(value_parser(parse_number::<u16>))]
+	tpdo: Option<u16>,
 
 	/// Enable th PDO.
 	#[clap(long)]
@@ -32,10 +36,35 @@ struct Options {
 	#[clap(group = "on-off")]
 	disable: bool,
 
+	/// Configure the COB ID of the PDO.
+	cob_id: Option<CanId>,
+
+	/// The transmission type to configure for the PDO.
+	#[clap(long)]
+	#[clap(value_parser(parse_number::<u8>))]
+	transmission_type: Option<u8>,
+
+	/// Set the inhibit time in multiples of 100 microseconds of the PDO (in multiples of 100 microseconds).
+	#[clap(long)]
+	#[clap(value_parser(parse_number::<u16>))]
+	inhibit_time: Option<u16>,
+
+	/// Set the timeout in milliseconds of the event/deadline timer of the PDO.
+	#[clap(long)]
+	#[clap(value_parser(parse_number::<u16>))]
+	event_timer: Option<u16>,
+
+	/// Configure a TPDO to ignore all sync messages with a counter lower than this value.
+	#[clap(long)]
+	#[clap(value_parser(parse_number::<u8>))]
+	start_sync: Option<u8>,
+
+	/// Remove all mappings for the PDO.
 	#[clap(long)]
 	#[clap(group = "mappings")]
 	clear_mappings: bool,
 
+	/// Configure the mappings of the PDO.
 	#[clap(long)]
 	#[clap(group = "mappings")]
 	#[clap(value_parser = parse_pdo_mapping)]
@@ -71,41 +100,66 @@ async fn do_main(options: Options) -> Result<(), ()> {
 		.map_err(|e| log::error!("Failed to create CAN socket for interface {}: {e}", options.interface))?;
 	let mut socket = CanOpenSocket::new(socket);
 
-	match options.kind {
-		PdoType::Rpdo => {
-			let mut config = socket.read_rpdo_configuration(options.node_id, SdoAddress::standard(), options.pdo, options.timeout).await
-				.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", options.pdo, options.node_id))?;
-			if options.clear_mappings {
-				config.mapping.clear();
-			} else if !options.mapping.is_empty() {
-				config.mapping = options.mapping;
-			}
-			if options.enable {
-				config.communication.enabled = true;
-			} else if options.disable {
-				config.communication.enabled = false;
-			}
-			log::info!("Setting RPDO configuration: {config:#?}");
-			socket.configure_rpdo(options.node_id, SdoAddress::standard(), options.pdo, &config, options.timeout).await
-				.map_err(|e| log::error!("Failed to configure RPDO {} of node {}: {e}", options.pdo, options.node_id))?;
-		},
-		PdoType::Tpdo => {
-			let mut config = socket.read_tpdo_configuration(options.node_id, SdoAddress::standard(), options.pdo, options.timeout).await
-				.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", options.pdo, options.node_id))?;
-			if options.clear_mappings {
-				config.mapping.clear();
-			} else if !options.mapping.is_empty() {
-				config.mapping = options.mapping;
-			}
-			if options.enable {
-				config.communication.enabled = true;
-			} else if options.disable {
-				config.communication.enabled = false;
-			}
-			log::info!("Setting TPDO configuration: {config:#?}");
-			socket.configure_tpdo(options.node_id, SdoAddress::standard(), options.pdo, &config, options.timeout).await
-				.map_err(|e| log::error!("Failed to configure RPDO {} of node {}: {e}", options.pdo, options.node_id))?;
-		},
+	if let Some(pdo) = options.rpdo {
+		let mut config = socket.read_rpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
+			.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", pdo, options.node_id))?;
+		if options.clear_mappings {
+			config.mapping.clear();
+		} else if !options.mapping.is_empty() {
+			config.mapping = options.mapping;
+		}
+		if options.enable {
+			config.communication.enabled = true;
+		} else if options.disable {
+			config.communication.enabled = false;
+		}
+		if let Some(value) = options.cob_id {
+			config.communication.cob_id = value;
+		}
+		if let Some(value) = options.transmission_type {
+			config.communication.mode = RpdoTransmissionType::from_u8(value);
+		}
+		if let Some(value) = options.inhibit_time {
+			config.communication.inhibit_time_100us = value;
+		}
+		if let Some(value) = options.event_timer {
+			config.communication.deadline_timer_ms = value;
+		}
+
+		log::info!("Setting RPDO configuration: {config:#?}");
+		socket.configure_rpdo(options.node_id, SdoAddress::standard(), pdo, &config, options.timeout).await
+			.map_err(|e| log::error!("Failed to configure RPDO {} of node {}: {e}", pdo, options.node_id))?;
+	} else if let Some(pdo) = options.tpdo {
+		let mut config = socket.read_tpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
+			.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", pdo, options.node_id))?;
+		if options.clear_mappings {
+			config.mapping.clear();
+		} else if !options.mapping.is_empty() {
+			config.mapping = options.mapping;
+		}
+		if options.enable {
+			config.communication.enabled = true;
+		} else if options.disable {
+			config.communication.enabled = false;
+		}
+		if let Some(value) = options.cob_id {
+			config.communication.cob_id = value;
+		}
+		if let Some(value) = options.transmission_type {
+			config.communication.mode = TpdoTransmissionType::from_u8(value);
+		}
+		if let Some(value) = options.inhibit_time {
+			config.communication.inhibit_time_100us = value;
+		}
+		if let Some(value) = options.event_timer {
+			config.communication.event_timer_ms = value;
+		}
+		if let Some(value) = options.start_sync {
+			config.communication.start_sync = value;
+		}
+		log::info!("Setting TPDO configuration: {config:#?}");
+		socket.configure_tpdo(options.node_id, SdoAddress::standard(), pdo, &config, options.timeout).await
+			.map_err(|e| log::error!("Failed to configure RPDO {} of node {}: {e}", pdo, options.node_id))?;
 	}
 
 	Ok(())
