@@ -1,7 +1,8 @@
 [package]
 name = "canopen-tokio"
 description = "low level CANopen for tokio"
-version = "0.1.0"
+version = "0.0.1-alpha1"
+license = "BSD-2-Clause"
 keywords = ["CANopen", "CAN", "fieldbus", "CANbus", "network"]
 categories = ["os", "hardware-support", "network-programming", "science::robotics"]
 repository = "https://github.com/de-vri-es/can-socket-rs/tree/main/can-socket"
