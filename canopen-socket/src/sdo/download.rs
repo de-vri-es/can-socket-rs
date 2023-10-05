@@ -64,6 +64,7 @@ async fn sdo_download_expedited(
 	log::debug!("├─ Node ID: {node_id:?}");
 	log::debug!("├─ SDO: command: 0x{:04X}, response: 0x{:04X}", address.command_address(), address.response_address());
 	log::debug!("├─ Object: index = 0x{:04X}, subindex = 0x{:02X}", object.index, object.subindex);
+	log::debug!("├─ Data: {data:02X?}");
 	log::debug!("└─ Timeout: {timeout:?}");
 	let command = make_sdo_expedited_download_command(node_id, address, object, data);
 	bus.socket.send(&command).await
@@ -117,6 +118,8 @@ async fn sdo_download_segmented(
 		for (i, data) in chunks {
 			// Send command to download next chunk.
 			log::debug!("Sending SDO segment download request to node 0x{node_id:02X}");
+			log::debug!("├─ Data: {data:02X?}");
+			log::debug!("└─ Timeout: {timeout:?}");
 			let complete = i + 1 == chunk_count;
 			let toggle = i % 2 == 1;
 			let command = make_sdo_segment_download_command(node_id, address, toggle, complete, data);

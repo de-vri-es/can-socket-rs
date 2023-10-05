@@ -27,7 +27,7 @@ pub struct CanOpenSocket {
 }
 
 /// An index in the object dictionary.
-#[derive(Debug, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct ObjectIndex {
 	/// The main index of the object.
 	pub index: u16,
@@ -233,5 +233,14 @@ impl ObjectIndex {
 	/// Create a new object index from a main index and a subindex.
 	pub fn new(index: u16, subindex: u8) -> Self {
 		Self { index, subindex }
+	}
+}
+
+impl std::fmt::Debug for ObjectIndex {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("ObjectIndex")
+			.field("index", &format_args!("0x{:04X}", self.index))
+			.field("subindex", &format_args!("0x{:02X}", self.subindex))
+			.finish()
 	}
 }

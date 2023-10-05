@@ -6,7 +6,6 @@ use crate::sdo::SdoAddress;
 use crate::{ObjectIndex, CanOpenSocket};
 
 use super::{
-	InvalidPdoNumber,
 	PdoConfigError,
 	PdoMapping,
 	RpdoCommunicationParameters,
@@ -24,7 +23,7 @@ pub(crate) async fn enable_rpdo(
 	enabled: bool,
 	timeout: Duration,
 ) -> Result<(), PdoConfigError> {
-	let index = rpdo_communication_params_object(pdo)?;
+	let index = super::rpdo_communication_params_object(pdo)?;
 	let object = ObjectIndex::new(index, 1);
 	let cob_id: u32 = bus.sdo_upload(node_id, sdo, object, timeout).await?;
 	let cob_id = if enabled {
@@ -45,7 +44,7 @@ pub(crate) async fn enable_tpdo(
 	enabled: bool,
 	timeout: Duration,
 ) -> Result<(), PdoConfigError> {
-	let index = rpdo_communication_params_object(pdo)?;
+	let index = super::tpdo_communication_params_object(pdo)?;
 	let object = ObjectIndex::new(index, 1);
 	let cob_id: u32 = bus.sdo_upload(node_id, sdo, object, timeout).await?;
 	let cob_id = if enabled {
@@ -66,7 +65,7 @@ pub(crate) async fn configure_rpdo(
 	config: &RpdoConfiguration,
 	timeout: Duration,
 ) -> Result<(), PdoConfigError> {
-	let mapping_index = rpdo_mapping_object(pdo)?;
+	let mapping_index = super::rpdo_mapping_object(pdo)?;
 	enable_rpdo(bus, node_id, sdo, pdo, false, timeout).await?;
 
 	write_rpdo_communication_parameters(bus, node_id, sdo, pdo, &config.communication, timeout).await?;
@@ -88,7 +87,7 @@ pub(crate) async fn configure_tpdo(
 	config: &TpdoConfiguration,
 	timeout: Duration,
 ) -> Result<(), PdoConfigError> {
-	let mapping_index = tpdo_mapping_object(pdo)?;
+	let mapping_index = super::tpdo_mapping_object(pdo)?;
 	enable_tpdo(bus, node_id, sdo, pdo, false, timeout).await?;
 
 	write_tpdo_communication_parameters(bus, node_id, sdo, pdo, &config.communication, timeout).await?;
@@ -110,7 +109,7 @@ pub(crate) async fn write_rpdo_communication_parameters(
 	params: &RpdoCommunicationParameters,
 	timeout: Duration,
 ) -> Result<(), PdoConfigError> {
-	let config_index = tpdo_communication_params_object(pdo)?;
+	let config_index = super::rpdo_communication_params_object(pdo)?;
 
 	let valid_subindices: u8 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
 	if valid_subindices < 3 && params.inhibit_time_100us > 0 {
@@ -146,7 +145,7 @@ pub(crate) async fn write_tpdo_communication_parameters(
 	params: &TpdoCommunicationParameters,
 	timeout: Duration,
 ) -> Result<(), PdoConfigError> {
-	let config_index = tpdo_communication_params_object(pdo)?;
+	let config_index = super::tpdo_communication_params_object(pdo)?;
 
 	let valid_subindices: u8 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
 	if valid_subindices < 3 && params.inhibit_time_100us > 0 {
@@ -203,40 +202,4 @@ pub(crate) async fn configure_pdo_mapping(
 	// Set field count correctly.
 	bus.sdo_download(node_id, sdo, ObjectIndex::new(object_index, 0), mappings.len() as u8, timeout).await?;
 	Ok(())
-}
-
-/// Get the object index of the communication parameters of an RPDO.
-fn rpdo_communication_params_object(pdo: u16) -> Result<u16, InvalidPdoNumber> {
-	if pdo < 512 {
-		Ok(0x1400 + pdo)
-	} else {
-		Err(InvalidPdoNumber { value: pdo })
-	}
-}
-
-/// Get the object index of the mapping parameters of an RPDO.
-fn rpdo_mapping_object(pdo: u16) -> Result<u16, InvalidPdoNumber> {
-	if pdo < 512 {
-		Ok(0x1600 + pdo)
-	} else {
-		Err(InvalidPdoNumber { value: pdo })
-	}
-}
-
-/// Get the object index of the communication parameters of a TPDO.
-fn tpdo_communication_params_object(pdo: u16) -> Result<u16, InvalidPdoNumber> {
-	if pdo < 512 {
-		Ok(0x1800 + pdo)
-	} else {
-		Err(InvalidPdoNumber { value: pdo })
-	}
-}
-
-/// Get the object index of the mapping parameters of a TPDO.
-fn tpdo_mapping_object(pdo: u16) -> Result<u16, InvalidPdoNumber> {
-	if pdo < 512 {
-		Ok(0x1A00 + pdo)
-	} else {
-		Err(InvalidPdoNumber { value: pdo })
-	}
 }

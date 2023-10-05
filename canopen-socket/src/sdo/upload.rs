@@ -64,7 +64,8 @@ pub(crate) async fn sdo_upload<Buffer: UploadBuffer>(
 
 		let len = match InitiateUploadResponse::parse(&response)? {
 			InitiateUploadResponse::Expedited(data) => {
-				log::debug!("Received SDO expedited upload response from node 0x{node_id:02X}: {data:02X?}");
+				log::debug!("Received SDO expedited upload response");
+				log::debug!("└─ Data: {data:02X?}");
 				buffer.reserve(data.len())?;
 				buffer.append(data);
 				return Ok(data.len());
@@ -90,7 +91,8 @@ pub(crate) async fn sdo_upload<Buffer: UploadBuffer>(
 				.map_err(SdoError::RecvFailed)?
 				.ok_or(SdoError::Timeout)?;
 			let (complete, segment_data) = parse_segment_upload_response(&response, toggle)?;
-			log::debug!("Received SDO segment upload response with data: {segment_data:02X?}");
+			log::debug!("Received SDO segment upload response");
+			log::debug!("├─ Data: {segment_data:02X?}");
 			log::debug!("└─ Last segment needed: {complete}");
 
 			if total_len + segment_data.len() >= len as usize {
