@@ -10,7 +10,7 @@ pub struct CanSocket {
 
 impl CanSocket {
 	pub fn bind(interface: impl AsRef<str>) -> std::io::Result<Self> {
-		let inner = sys::Socket::new(false)?;
+		let inner = sys::Socket::new(true)?;
 		let interface = inner.get_interface_by_name(interface.as_ref())?;
 		inner.bind(&interface)?;
 		let io = AsyncFd::new(inner)?;
@@ -18,7 +18,7 @@ impl CanSocket {
 	}
 
 	pub fn bind_interface_index(index: u32) -> std::io::Result<Self> {
-		let inner = sys::Socket::new(false)?;
+		let inner = sys::Socket::new(true)?;
 		inner.bind(&CanInterface::from_index(index))?;
 		let io = AsyncFd::new(inner)?;
 		Ok(Self { io })
