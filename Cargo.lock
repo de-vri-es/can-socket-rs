@@ -108,7 +108,7 @@ dependencies = [
 
 [[package]]
 name = "canopen-tokio"
-version = "0.1.0"
+version = "0.0.1-alpha1"
 dependencies = [
  "can-socket",
  "clap",
