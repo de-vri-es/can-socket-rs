@@ -244,10 +244,12 @@ impl CanOpenSocket {
 
 	/// Receive a new message from the CAN bus that that matches the given function code and node ID.
 	///
+	/// RTR (request-to-read) messages are filtered out (not returned).
+	///
 	/// Messages already in the read queue are not returned.
 	/// If a message does not match the filter, it is added to the read queue.
 	async fn recv_new_by_can_id(&mut self, can_id: CanBaseId, timeout: Duration) -> std::io::Result<Option<CanFrame>> {
-		self.recv_new_filtered(|frame| frame.id().to_base().ok() == Some(can_id), timeout).await
+		self.recv_new_filtered(|frame| !frame.is_rtr() && frame.id().to_base().ok() == Some(can_id), timeout).await
 	}
 }
 

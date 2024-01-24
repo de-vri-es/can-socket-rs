@@ -58,6 +58,23 @@ impl CanFrame {
 		Ok(Self { inner })
 	}
 
+	/// Create a new RTR (request-to-read) frame.
+	pub fn new_rtr(id: impl Into<CanId>, data_len: u8) -> std::io::Result<Self> {
+		let id = id.into();
+		if data_len > 8 {
+			return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "maximum CAN data length is 8 bytes"));
+		}
+
+		let mut inner: can_frame = unsafe { std::mem::zeroed() };
+		inner.can_id = match id {
+			CanId::Extended(x) => x.as_u32() | libc::CAN_EFF_FLAG,
+			CanId::Base(x) => x.as_u16().into(),
+		};
+		inner.can_dlc = data_len;
+		inner.len8_dlc = 0;
+		Ok(Self { inner })
+	}
+
 	pub fn id(&self) -> CanId {
 		// Unwrap should be fine: the kernel should never give us an invalid CAN ID,
 		// and the Rust constructor doesn't allow it.
@@ -66,6 +83,10 @@ impl CanFrame {
 		} else {
 			CanId::new_extended(self.inner.can_id & libc::CAN_EFF_MASK).unwrap()
 		}
+	}
+
+	pub fn is_rtr(&self) -> bool {
+		self.inner.can_id & libc::CAN_RTR_FLAG != 0
 	}
 
 	pub fn data(&self) -> &[u8] {
