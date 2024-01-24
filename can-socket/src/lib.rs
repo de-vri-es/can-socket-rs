@@ -95,10 +95,14 @@ impl std::os::fd::FromRawFd for CanSocket {
 
 impl std::fmt::Debug for CanFrame {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_struct("CanFrame")
+		let mut debug = f.debug_struct("CanFrame");
+		debug
 			.field("id", &format_args!("{:?}", self.id()))
-			.field("data", &format_args!("{:02X?}", self.data()))
-			.field("data_length_code", &self.data_length_code())
-			.finish()
+			.field("is_rtr", &self.is_rtr())
+			.field("data_length_code", &self.data_length_code());
+		if !self.is_rtr() {
+			debug.field("data", &format_args!("{:02X?}", self.data()));
+		}
+		debug.finish()
 	}
 }
