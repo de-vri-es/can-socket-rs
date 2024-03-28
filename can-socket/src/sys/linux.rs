@@ -15,7 +15,6 @@ struct can_frame {
 	pub data: [u8; 8],
 }
 
-
 #[derive(Debug)]
 pub struct Socket {
 	fd: FileDesc,

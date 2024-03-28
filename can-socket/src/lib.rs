@@ -7,6 +7,21 @@ pub struct CanSocket {
 	inner: sys::Socket,
 }
 
+impl std::fmt::Debug for CanSocket {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		let mut debug = f.debug_struct("CanSocket");
+		#[cfg(unix)]
+		{
+			use std::os::unix::io::AsRawFd;
+			debug.field("fd", &self.as_raw_fd());
+			debug.finish()
+		}
+
+		#[cfg(not(unix))]
+		debug.finish_non_exhaustive()
+	}
+}
+
 mod can_id;
 pub use can_id::*;
 
