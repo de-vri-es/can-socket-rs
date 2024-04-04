@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.1.2 - 2024-04-04
 - [fix][patch] Fix compilation on *-linux-musl target.
 
 # Version 0.1.1 - 2024-03-28
