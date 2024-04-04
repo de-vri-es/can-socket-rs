@@ -183,7 +183,7 @@ impl Socket {
 				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "interface name contain a null byte"));
 			}
 			std::ptr::copy(name.as_ptr().cast(), req.ifr_name.as_mut_ptr(), name.len());
-			check_int(libc::ioctl(self.fd.as_raw_fd(), libc::SIOCGIFINDEX, &mut req))?;
+			check_int(libc::ioctl(self.fd.as_raw_fd(), libc::SIOCGIFINDEX as _, &mut req))?;
 			Ok(CanInterface::from_index(req.ifr_ifru.ifru_ifindex as u32))
 		}
 	}

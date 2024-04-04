@@ -1,3 +1,6 @@
+# Unreleased
+- [fix][patch] Fix compilation on *-linux-musl target.
+
 # Version 0.1.1 - 2024-03-28
 - [add][minor] Implement Debug for CanSocket.
 
