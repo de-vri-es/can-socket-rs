@@ -121,3 +121,17 @@ impl std::fmt::Debug for CanFrame {
 		debug.finish()
 	}
 }
+
+#[cfg(test)]
+mod test {
+	use super::*;
+	use assert2::{assert, let_assert};
+
+	#[test]
+	fn can_frame_is_copy() {
+		let_assert!(Ok(frame) = CanFrame::new(1u8, &[1, 2, 3, 4], None));
+		let copy = frame;
+		assert!(copy.id() == CanId::Base(1.into()));
+		assert!(copy.data() == &[1, 2, 3, 4]);
+	}
+}
