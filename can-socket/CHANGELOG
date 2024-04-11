@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.1.3 - 2024-04-11
 - [add][minor] Implement `Clone` and `Copy` for `CanFrame`.
 
 # Version 0.1.2 - 2024-04-04
