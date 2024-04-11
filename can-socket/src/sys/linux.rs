@@ -20,6 +20,7 @@ pub struct Socket {
 	fd: FileDesc,
 }
 
+#[derive(Copy, Clone)]
 pub struct CanFrame {
 	inner: can_frame
 }

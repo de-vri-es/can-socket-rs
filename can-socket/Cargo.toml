@@ -17,6 +17,7 @@ libc = "0.2.148"
 tokio = { version = "1.32.0", optional = true, features = ["net"] }
 
 [dev-dependencies]
+assert2 = "0.3.14"
 can-socket = { path = ".", features = ["tokio"] }
 clap = { version = "4.4.4", features = ["derive"] }
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
