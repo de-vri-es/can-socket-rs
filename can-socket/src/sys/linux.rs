@@ -70,6 +70,7 @@ impl CanFrame {
 			CanId::Extended(x) => x.as_u32() | libc::CAN_EFF_FLAG,
 			CanId::Base(x) => x.as_u16().into(),
 		};
+		inner.can_id |= libc::CAN_RTR_FLAG;
 		inner.can_dlc = data_len;
 		inner.len8_dlc = 0;
 		Ok(Self { inner })
