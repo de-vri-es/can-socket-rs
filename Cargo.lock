@@ -115,7 +115,7 @@ dependencies = [
 
 [[package]]
 name = "can-socket"
-version = "0.1.2"
+version = "0.1.3"
 dependencies = [
  "assert2",
  "can-socket",
