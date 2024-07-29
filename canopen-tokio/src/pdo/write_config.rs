@@ -111,7 +111,7 @@ pub(crate) async fn write_rpdo_communication_parameters(
 ) -> Result<(), PdoConfigError> {
 	let config_index = super::rpdo_communication_params_object(pdo)?;
 
-	let valid_subindices: u8 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
+	let valid_subindices: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
 	if valid_subindices < 3 && params.inhibit_time_100us > 0 {
 		return Err(PdoConfigError::InhibitTimeNotSupported);
 	}
@@ -147,7 +147,7 @@ pub(crate) async fn write_tpdo_communication_parameters(
 ) -> Result<(), PdoConfigError> {
 	let config_index = super::tpdo_communication_params_object(pdo)?;
 
-	let valid_subindices: u8 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
+	let valid_subindices: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
 	if valid_subindices < 3 && params.inhibit_time_100us > 0 {
 		return Err(PdoConfigError::InhibitTimeNotSupported);
 	}
