@@ -111,7 +111,8 @@ pub(crate) async fn write_rpdo_communication_parameters(
 ) -> Result<(), PdoConfigError> {
 	let config_index = super::rpdo_communication_params_object(pdo)?;
 
-	let valid_subindices: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
+	let valid_subindices: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?; 
+	// Should be u8 according to CanOpen documentation, but in one of the slave devices (CanIt10) this is a u32.
 	if valid_subindices < 3 && params.inhibit_time_100us > 0 {
 		return Err(PdoConfigError::InhibitTimeNotSupported);
 	}
@@ -148,6 +149,7 @@ pub(crate) async fn write_tpdo_communication_parameters(
 	let config_index = super::tpdo_communication_params_object(pdo)?;
 
 	let valid_subindices: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
+	// Should be u8 according to CanOpen documentation, but in one of the slave devices (CanIt10) this is a u32.
 	if valid_subindices < 3 && params.inhibit_time_100us > 0 {
 		return Err(PdoConfigError::InhibitTimeNotSupported);
 	}
