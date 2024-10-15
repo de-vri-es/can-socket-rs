@@ -1,3 +1,6 @@
+# main
+- [change][minor] Make CAN ID functions const.
+
 # Version 0.1.4 - 2024-05-13
 - [fix][minor] Set the RTR flag for RTR frames.
 

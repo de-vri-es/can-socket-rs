@@ -23,75 +23,93 @@ pub struct CanExtendedId {
 }
 
 impl CanId {
-	pub fn new(id: u32) -> Result<Self, InvalidId> {
-		if id <= MAX_CAN_ID_BASE.into() {
+	pub const fn new(id: u32) -> Result<Self, InvalidId> {
+		if id <= MAX_CAN_ID_BASE as u32 {
 			let id = id as u16;
 			Ok(Self::Base(CanBaseId { id }))
 		} else {
-			Ok(Self::Extended(CanExtendedId::new(id)?))
+			match CanExtendedId::new(id) {
+				Ok(x) => Ok(Self::Extended(x)),
+				Err(e) => Err(e)
+			}
 		}
 	}
 
-	pub fn new_base(id: u16) -> Result<Self, InvalidId> {
-		Ok(Self::Base(CanBaseId::new(id)?))
+	pub const fn new_base(id: u16) -> Result<Self, InvalidId> {
+		match CanBaseId::new(id) {
+			Ok(x) => Ok(Self::Base(x)),
+			Err(e) => Err(e),
+		}
 	}
 
-	pub fn new_extended(id: u32) -> Result<Self, InvalidId> {
-		Ok(Self::Extended(CanExtendedId::new(id)?))
+	pub const fn new_extended(id: u32) -> Result<Self, InvalidId> {
+		match CanExtendedId::new(id) {
+			Ok(x) => Ok(Self::Extended(x)),
+			Err(e) => Err(e),
+		}
 	}
 
-	pub fn as_u32(self) -> u32 {
+	pub const fn as_u32(self) -> u32 {
 		self.to_extended().as_u32()
 	}
 
-	pub fn as_base(self) -> Option<CanBaseId> {
+	pub const fn as_base(self) -> Option<CanBaseId> {
 		match self {
 			Self::Base(id) => Some(id),
 			Self::Extended(_) => None,
 		}
 	}
 
-	pub fn as_extended(self) -> Option<CanExtendedId> {
+	pub const fn as_extended(self) -> Option<CanExtendedId> {
 		match self {
 			Self::Base(_) => None,
 			Self::Extended(id) => Some(id),
 		}
 	}
 
-	pub fn to_base(self) -> Result<CanBaseId, InvalidId> {
+	pub const fn to_base(self) -> Result<CanBaseId, InvalidId> {
 		match self {
 			Self::Base(id) => Ok(id),
-			Self::Extended(id) => id.try_into(),
+			Self::Extended(id) => {
+				if id.as_u32() <= u16::MAX as u32 {
+					CanBaseId::new(id.as_u32() as u16)
+				} else {
+					Err(InvalidId {
+						id: Some(id.as_u32()),
+						extended: false,
+					})
+				}
+			}
 		}
 	}
 
-	pub fn to_extended(self) -> CanExtendedId {
+	pub const fn to_extended(self) -> CanExtendedId {
 		match self {
-			Self::Base(id) => id.into(),
+			Self::Base(id) => CanExtendedId::from_u16(id.as_u16()),
 			Self::Extended(id) => id,
 		}
 	}
 }
 
 impl CanBaseId {
-	pub fn new(id: u16) -> Result<Self, InvalidId> {
+	pub const fn new(id: u16) -> Result<Self, InvalidId> {
 		if id <= MAX_CAN_ID_BASE {
 			Ok(Self { id })
 		} else {
 			Err(InvalidId {
-				id: Some(id.into()),
+				id: Some(id as u32),
 				extended: false,
 			})
 		}
 	}
 
-	pub fn as_u16(self) -> u16 {
+	pub const fn as_u16(self) -> u16 {
 		self.id
 	}
 }
 
 impl CanExtendedId {
-	pub fn new(id: u32) -> Result<Self, InvalidId> {
+	pub const fn new(id: u32) -> Result<Self, InvalidId> {
 		if id <= MAX_CAN_ID_EXTENDED {
 			Ok(Self { id })
 		} else {
@@ -102,7 +120,15 @@ impl CanExtendedId {
 		}
 	}
 
-	pub fn as_u32(self) -> u32 {
+	pub const fn from_u8(id: u8) -> Self {
+		Self { id: id as u32 }
+	}
+
+	pub const fn from_u16(id: u16) -> Self {
+		Self { id: id as u32 }
+	}
+
+	pub const fn as_u32(self) -> u32 {
 		self.id
 	}
 }
