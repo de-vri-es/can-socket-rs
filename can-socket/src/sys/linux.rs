@@ -1,7 +1,7 @@
 use std::{os::raw::{c_int, c_void}, mem::MaybeUninit, ffi::CString};
 use filedesc::FileDesc;
 
-use crate::CanId;
+use crate::{CanBaseId, CanExtendedId, CanId};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -29,6 +29,12 @@ pub struct CanFrame {
 #[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct CanInterface {
 	index: u32,
+}
+
+#[repr(transparent)]
+#[derive(Copy, Clone)]
+pub struct CanFilter {
+	filter: libc::can_filter,
 }
 
 impl CanFrame {
@@ -261,6 +267,90 @@ impl Socket {
 
 			Ok((frame.assume_init(), CanInterface { index: addr.can_ifindex as u32 }))
 		}
+	}
+
+	pub fn set_filters(&self, filters: &[crate::CanFilter]) -> std::io::Result<()> {
+		let len = std::mem::size_of_val(filters)
+			.try_into()
+			.map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "filter list too large"))?;
+		unsafe {
+			check_int(libc::setsockopt(
+				self.fd.as_raw_fd(),
+				libc::SOL_CAN_RAW,
+				libc::CAN_RAW_FILTER,
+				filters.as_ptr().cast(),
+				len,
+			))?;
+			Ok(())
+		}
+	}
+}
+
+impl CanFilter {
+	pub const fn new_base(id: CanBaseId) -> Self {
+		Self {
+			filter: libc::can_filter {
+				can_id: id.as_u16() as u32,
+				can_mask: 0,
+			},
+		}
+	}
+
+	pub const fn new_extended(id: CanExtendedId) -> Self {
+		Self {
+			filter: libc::can_filter {
+				can_id: id.as_u32(),
+				can_mask: 0,
+			},
+		}
+	}
+
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn match_id_value(mut self) -> Self {
+		self.filter.can_mask |= libc::CAN_EFF_MASK;
+		self
+	}
+
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn match_id_mask(mut self, mask: u32) -> Self {
+		self.filter.can_mask |= mask & libc::CAN_EFF_MASK;
+		self
+	}
+
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn match_base_extended(mut self) -> Self {
+		self.filter.can_mask |= libc::CAN_EFF_FLAG;
+		self
+	}
+
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn match_exact_id(mut self) -> Self {
+		self.filter.can_mask |= libc::CAN_EFF_MASK | libc::CAN_EFF_FLAG;
+		self
+	}
+
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn match_rtr_only(mut self) -> Self {
+		self.filter.can_id |= libc::CAN_RTR_FLAG;
+		self.filter.can_mask |= libc::CAN_RTR_FLAG;
+		self
+	}
+
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn match_data_only(mut self) -> Self {
+		self.filter.can_id &= !libc::CAN_RTR_FLAG;
+		self.filter.can_mask |= libc::CAN_RTR_FLAG;
+		self
+	}
+
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn inverted(mut self, inverted: bool) -> Self {
+		if inverted {
+			self.filter.can_id |= libc::CAN_INV_FILTER;
+		} else {
+			self.filter.can_id &= !libc::CAN_INV_FILTER;
+		}
+		self
 	}
 }
 

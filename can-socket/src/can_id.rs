@@ -103,6 +103,10 @@ impl CanBaseId {
 		}
 	}
 
+	pub const fn from_u8(id: u8) -> Self {
+		Self { id: id as u16 }
+	}
+
 	pub const fn as_u16(self) -> u16 {
 		self.id
 	}
