@@ -11,7 +11,7 @@ documentation = "https://docs.rs/canopen-socket"
 edition = "2021"
 
 [dependencies]
-can-socket = { version = "0.1.4", path = "../can-socket", features = ["tokio"] }
+can-socket = { version = "0.1.5", path = "../can-socket", features = ["tokio"] }
 log = "0.4.20"
 num_enum = "0.7.0"
 thiserror = "1.0.49"

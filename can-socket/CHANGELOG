@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.1.5 - 2024-10-15
 - [change][minor] Make CAN ID functions const.
 - [add][minor] Add support for setting filters on the CAN socket.
 
