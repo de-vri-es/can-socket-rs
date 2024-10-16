@@ -7,6 +7,14 @@ pub struct CanFilter {
 }
 
 impl CanFilter {
+	/// Create a new pass-all CAN filter.
+	///
+	/// The CAN ID of the created filter is set to 0.
+	#[inline]
+	pub const fn new_any() -> Self {
+		Self::new_base(CanBaseId::from_u8(0))
+	}
+
 	/// Create a new pass-all CAN filter with a base or extended ID.
 	///
 	/// The mask is still set to zero when the filter is created.
@@ -134,5 +142,11 @@ impl CanFilter {
 	#[inline]
 	pub const fn test(&self, frame: &CanFrame) -> bool {
 		self.filter.test(&frame.inner)
+	}
+}
+
+impl Default for CanFilter {
+	fn default() -> Self {
+		Self::new_any()
 	}
 }

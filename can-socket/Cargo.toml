@@ -11,10 +11,13 @@ documentation = "https://docs.rs/can-socket"
 edition = "2021"
 publish = ["crates-io"]
 
+[features]
+tokio = ["dep:tokio"]
+
 [dependencies]
 filedesc = "0.6.3"
 libc = "0.2.148"
-tokio = { version = "1.32.0", optional = true, features = ["net", "time"] }
+tokio = { version = "1.32.0", optional = true, features = ["macros", "net", "sync", "time"] }
 
 [dev-dependencies]
 assert2 = "0.3.14"
