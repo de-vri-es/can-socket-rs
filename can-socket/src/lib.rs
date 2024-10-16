@@ -89,9 +89,52 @@ impl CanSocket {
 
 	/// Set the list of filters on the socket.
 	///
+	/// When a socket is created, it will receive all frames from the CAN interface.
+	/// You can restrict this by setting the filters with this function.
+	///
 	/// A frame has to match only one of the filters in the list to be received by the socket.
 	pub fn set_filters(&self, filters: &[CanFilter]) -> std::io::Result<()> {
 		self.inner.set_filters(filters)
+	}
+
+	/// Check if the loopback option of the socket is enabled.
+	///
+	/// When enabled (the default for new sockets),
+	/// frames sent on the same interface by other sockets are also received by this socket.
+	pub fn get_loopback(&self) -> std::io::Result<bool> {
+		self.inner.get_loopback()
+	}
+
+	/// Enable or disabling the loopback option of the socket.
+	///
+	/// When enabled (the default for new sockets),
+	/// frames sent on the same interface by other sockets are also received by this socket.
+	///
+	/// See `Self::set_receive_own_messages()` if you also want to receive messages sens on *this* socket.
+	pub fn set_loopback(&self, enable: bool) -> std::io::Result<()> {
+		self.inner.set_loopback(enable)
+	}
+
+	/// Check if the receive own messages option of the socket is enabled.
+	///
+	/// When this option is enabled, frames sent on this socket are also delivered to this socket.
+	///
+	/// Note that frames sent on this socket are subject to all the same filtering mechanisms as other frames.
+	/// To receive frames send on this socket, you must also to ensure that the loopback option is enabled ([`Self::get_loopback()`]),
+	/// and that the frame is not discarded by the filters ([`Self::set_filters()`]).
+	pub fn get_receive_own_messages(&self) -> std::io::Result<bool> {
+		self.inner.get_receive_own_messages()
+	}
+
+	/// Enable or disable the receive own messages option of the socket.
+	///
+	/// When this option is enabled, frames sent on this socket are also delivered to this socket.
+	///
+	/// Note that frames sent on this socket are subject to all the same filtering mechanisms as other frames.
+	/// To receive frames send on this socket, you must also to ensure that the loopback option is enabled ([`Self::set_loopback()`]),
+	/// and that the frame is not discarded by the filters ([`Self::set_filters()`]).
+	pub fn set_receive_own_messages(&self, enable: bool) -> std::io::Result<()> {
+		self.inner.set_receive_own_messages(enable)
 	}
 }
 

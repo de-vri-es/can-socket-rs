@@ -1,3 +1,7 @@
+# Unreleased
+- [add][minor] Add `get_loopback()`/`set_loopback()`.
+- [add][minor] Add `get_receive_own_messages()`/`set_receive_own_messages()`.
+
 # Version 0.1.5 - 2024-10-15
 - [change][minor] Make CAN ID functions const.
 - [add][minor] Add support for setting filters on the CAN socket.

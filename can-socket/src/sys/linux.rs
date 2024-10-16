@@ -1,5 +1,6 @@
-use std::{os::raw::{c_int, c_void}, mem::MaybeUninit, ffi::CString};
 use filedesc::FileDesc;
+use std::ffi::{c_int, c_uint, c_void, CString};
+use std::mem::MaybeUninit;
 
 use crate::{CanBaseId, CanExtendedId, CanId};
 
@@ -283,6 +284,64 @@ impl Socket {
 			))?;
 			Ok(())
 		}
+	}
+
+	pub fn get_loopback(&self) -> std::io::Result<bool> {
+		let mut enable: c_int = 0;
+		let mut len: c_uint = std::mem::size_of::<c_int>() as c_uint;
+		unsafe {
+			check_int(libc::getsockopt(
+				self.fd.as_raw_fd(),
+				libc::SOL_CAN_RAW,
+				libc::CAN_RAW_LOOPBACK,
+				&mut enable as *mut c_int as *mut c_void,
+				&mut len,
+			))?;
+		}
+		Ok(enable != 0)
+	}
+
+	pub fn set_loopback(&self, enable: bool) -> std::io::Result<()> {
+		let enabled = c_int::from(enable);
+		unsafe {
+			check_int(libc::setsockopt(
+				self.fd.as_raw_fd(),
+				libc::SOL_CAN_RAW,
+				libc::CAN_RAW_LOOPBACK,
+				&enabled as *const c_int as *const c_void,
+				std::mem::size_of_val(&enabled) as u32,
+			))?;
+		}
+		Ok(())
+	}
+
+	pub fn get_receive_own_messages(&self) -> std::io::Result<bool> {
+		let mut enabled: c_int = 0;
+		let mut len: c_uint = std::mem::size_of::<c_int>() as c_uint;
+		unsafe {
+			check_int(libc::getsockopt(
+				self.fd.as_raw_fd(),
+				libc::SOL_CAN_RAW,
+				libc::CAN_RAW_RECV_OWN_MSGS,
+				&mut enabled as *mut c_int as *mut c_void,
+				&mut len,
+			))?;
+		}
+		Ok(enabled != 0)
+	}
+
+	pub fn set_receive_own_messages(&self, enable: bool) -> std::io::Result<()> {
+		let enable = c_int::from(enable);
+		unsafe {
+			check_int(libc::setsockopt(
+				self.fd.as_raw_fd(),
+				libc::SOL_CAN_RAW,
+				libc::CAN_RAW_RECV_OWN_MSGS,
+				&enable as *const c_int as *const c_void,
+				std::mem::size_of_val(&enable) as u32,
+			))?;
+		}
+		Ok(())
 	}
 }
 
