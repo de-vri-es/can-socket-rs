@@ -411,6 +411,20 @@ impl CanFilter {
 		}
 		self
 	}
+
+	pub const fn is_inverted(self) -> bool {
+		self.filter.can_id & libc::CAN_INV_FILTER != 0
+	}
+
+	pub const fn test(self, frame: &CanFrame) -> bool {
+		let id = self.filter.can_id & !libc::CAN_INV_FILTER;
+		let frame_matches = frame.inner.can_id & self.filter.can_mask == id & self.filter.can_mask;
+		if self.is_inverted() {
+			frame_matches
+		} else {
+			!frame_matches
+		}
+	}
 }
 
 fn check_int(return_value: c_int) -> std::io::Result<c_int> {

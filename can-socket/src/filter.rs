@@ -1,4 +1,4 @@
-use crate::{sys, CanBaseId, CanExtendedId, CanId};
+use crate::{sys, CanBaseId, CanExtendedId, CanFrame, CanId};
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
@@ -11,6 +11,7 @@ impl CanFilter {
 	///
 	/// The mask is still set to zero when the filter is created.
 	/// You have to call additional methods to restrict what frames match filter.
+	#[inline]
 	pub const fn new(id: CanId) -> Self {
 		match id {
 			CanId::Base(id) => Self::new_base(id),
@@ -22,6 +23,7 @@ impl CanFilter {
 	///
 	/// The mask is still set to zero when the filter is created.
 	/// You have to call additional methods to restrict what frames match filter.
+	#[inline]
 	pub const fn new_base(id: CanBaseId) -> Self {
 		Self {
 			filter: sys::CanFilter::new_base(id),
@@ -32,6 +34,7 @@ impl CanFilter {
 	///
 	/// The mask is still set to zero when the filter is created.
 	/// You have to call additional methods to restrict what frames match filter.
+	#[inline]
 	pub const fn new_extended(id: CanExtendedId) -> Self {
 		Self {
 			filter: sys::CanFilter::new_extended(id),
@@ -43,6 +46,7 @@ impl CanFilter {
 	/// The filter will still accept extended and base frames (if the numerical value is possible for base frames).
 	///
 	/// Adds to any restrictions already applied to the filter.
+	#[inline]
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn match_id_value(mut self) -> Self {
 		self.filter = self.filter.match_id_value();
@@ -52,6 +56,7 @@ impl CanFilter {
 	/// Restrict the filter to match only frames where `frame.id & mask == filter.id & mask`.
 	///
 	/// Only the lower 29 bits of the mask are used.
+	#[inline]
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn match_id_mask(mut self, mask: u32) -> Self {
 		self.filter = self.filter.match_id_mask(mask);
@@ -61,6 +66,7 @@ impl CanFilter {
 	/// Restrict the filter to match only extended IDs or base IDs (depending on the ID the filter was constructed with).
 	///
 	/// Adds to any restrictions already applied to the filter.
+	#[inline]
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn match_base_extended(mut self) -> Self {
 		self.filter = self.filter.match_base_extended();
@@ -80,6 +86,7 @@ impl CanFilter {
 	/// ```
 	///
 	/// Adds to any restrictions already applied to the filter.
+	#[inline]
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn match_exact_id(mut self) -> Self {
 		self.filter = self.filter.match_exact_id();
@@ -87,6 +94,7 @@ impl CanFilter {
 	}
 
 	/// Restrict the filter to match only RTR frames.
+	#[inline]
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn match_rtr_only(mut self) -> Self {
 		self.filter = self.filter.match_rtr_only();
@@ -96,6 +104,7 @@ impl CanFilter {
 	/// Restrict the filter to match only data frames.
 	///
 	/// Overrides any previous calls to `Self::match_rtr_only()`.
+	#[inline]
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn match_data_only(mut self) -> Self {
 		self.filter = self.filter.match_data_only();
@@ -105,9 +114,25 @@ impl CanFilter {
 	/// Make the filter inverted or non-inverted.
 	///
 	/// When inverted, only frame that normally would not match the filter will match the filter.
+	#[inline]
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn inverted(mut self, inverted: bool) -> Self {
 		self.filter = self.filter.inverted(inverted);
 		self
+	}
+
+	/// Check if the filter is inverted.
+	///
+	/// When inverted, only frame that normally would not match the filter will match the filter.
+	#[inline]
+	#[must_use = "returns a new filter, does not modify the existing filter"]
+	pub const fn is_inverted(self) -> bool {
+		self.filter.is_inverted()
+	}
+
+	/// Test if a frame matches the filter.
+	#[inline]
+	pub const fn test(&self, frame: &CanFrame) -> bool {
+		self.filter.test(frame)
 	}
 }
