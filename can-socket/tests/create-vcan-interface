@@ -1,0 +1,55 @@
+#!/bin/sh
+
+die() {
+	printf "$@" >&2
+	echo >&2
+	exit 1
+}
+
+usage() {
+	die "Usage: create-vcan-interface [add|del] NAME"
+}
+
+add_interface() {
+	local name="$1"
+
+	mkdir -p /run/create-vcan-interface || exit $?
+	ip link add name "$name" type vcan || exit $?
+	touch "/run/create-vcan-interface/$name" || exit "$?"
+	ip link set dev "$name" up
+}
+
+delete_interface() {
+	local name="$1"
+	if [ ! -f /run/create-vcan-interface/$name ]; then
+		printf "Interface %s not created by us, refusing to delete it\n" "$name" >&2
+		exit 1;
+	else
+		rm "/run/create-vcan-interface/$name" || exit "$?"
+		ip link del name "$name" || exit "$?"
+	fi
+}
+
+main() {
+	[ "$#" -eq 2 ] || usage
+
+	if [ "$(id -u)" -ne "0" ]; then
+		exec sudo "$0" "$@";
+	fi
+
+	local action="$1"
+	local name="$2"
+
+	case "$name" in
+		vcan-*) ;;
+		*) die "Interface name must start with vcan-";;
+	esac
+
+	case "$action" in
+		"add") add_interface "$name" ;;
+		"del") delete_interface "$name" ;;
+		*) usage ;;
+	esac
+}
+
+main "$@"

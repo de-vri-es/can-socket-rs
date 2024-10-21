@@ -20,4 +20,5 @@ tokio = { version = "1.32.0", optional = true, features = ["net", "time"] }
 assert2 = "0.3.14"
 can-socket = { path = ".", features = ["tokio"] }
 clap = { version = "4.4.4", features = ["derive"] }
+rand = "0.8.5"
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
