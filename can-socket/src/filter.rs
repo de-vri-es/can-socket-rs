@@ -133,6 +133,6 @@ impl CanFilter {
 	/// Test if a frame matches the filter.
 	#[inline]
 	pub const fn test(&self, frame: &CanFrame) -> bool {
-		self.filter.test(frame)
+		self.filter.test(&frame.inner)
 	}
 }
