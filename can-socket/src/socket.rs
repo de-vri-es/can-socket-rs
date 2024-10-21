@@ -44,6 +44,15 @@ impl CanSocket {
 		Self::bind_interface_index(0)
 	}
 
+	/// Get the interface this socket is bound to.
+	///
+	/// If the socket is bound to all interfaces, the returned `CanInterface` will report index 0.
+	pub fn local_addr(&self) -> std::io::Result<crate::CanInterface> {
+		Ok(CanInterface {
+			inner: self.inner.local_addr()?,
+		})
+	}
+
 	/// Set the socket in non-blocking or blocking mode.
 	///
 	/// If the socket is set in non-blocking mode, send and receive operations will never block.
