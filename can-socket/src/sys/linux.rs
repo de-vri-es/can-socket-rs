@@ -212,10 +212,11 @@ impl Socket {
 	pub fn local_addr(&self) -> std::io::Result<CanInterface> {
 		unsafe {
 			let mut addr: libc::sockaddr_can = std::mem::zeroed();
+			let mut addr_len: libc::socklen_t = std::mem::size_of_val(&addr) as _;
 			let _addr_len = check_int(libc::getsockname(
 				self.fd.as_raw_fd(),
 				&mut addr as *mut libc::sockaddr_can as *mut libc::sockaddr,
-				std::mem::size_of_val(&addr) as _
+				&mut addr_len,
 			));
 			Ok(CanInterface {
 				index: addr.can_ifindex as u32,
