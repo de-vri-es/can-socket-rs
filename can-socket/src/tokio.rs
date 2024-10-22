@@ -56,6 +56,15 @@ impl CanSocket {
 		Self::bind_interface_index(0)
 	}
 
+	/// Get the interface this socket is bound to.
+	///
+	/// If the socket is bound to all interfaces, the returned `CanInterface` will report index 0.
+	pub fn local_addr(&self) -> std::io::Result<CanInterface> {
+		Ok(CanInterface {
+			inner: self.io.get_ref().local_addr()?,
+		})
+	}
+
 	/// Send a frame over the socket.
 	pub async fn send(&self, frame: &CanFrame) -> std::io::Result<()> {
 		self.io.async_io(tokio::io::Interest::WRITABLE, |inner| {

@@ -2,6 +2,7 @@
 - [add][minor] Add `get_loopback()`/`set_loopback()`.
 - [add][minor] Add `get_receive_own_messages()`/`set_receive_own_messages()`.
 - [add][minor] Add `CanFilter::test()` function to manually test a frame against a filter.
+- [add][minor] Add `CanSocket::local_addr()` to get the CAN interface of a socket.
 
 # Version 0.1.5 - 2024-10-15
 - [change][minor] Make CAN ID functions const.
