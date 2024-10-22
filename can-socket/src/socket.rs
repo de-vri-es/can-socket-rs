@@ -62,14 +62,17 @@ impl CanSocket {
 	}
 
 	/// Send a frame over the socket.
+	///
+	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
+	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
 	pub fn send(&self, frame: &CanFrame) -> std::io::Result<()> {
 		self.inner.send(&frame.inner)
 	}
 
 	/// Send a frame over a particular interface.
 	///
-	/// The interface must match the interface the socket was bound to,
-	/// or the socket must have been bound to all interfaces.
+	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
+	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
 	pub fn send_to(&self, frame: &CanFrame, interface: &CanInterface) -> std::io::Result<()> {
 		self.inner.send_to(&frame.inner, &interface.inner)
 	}

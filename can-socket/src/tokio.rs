@@ -4,6 +4,7 @@ use crate::sys;
 use crate::CanFilter;
 use crate::CanFrame;
 use crate::CanInterface;
+use crate::Deadline;
 
 pub struct CanSocket {
 	io: AsyncFd<sys::Socket>,
@@ -66,10 +67,24 @@ impl CanSocket {
 	}
 
 	/// Send a frame over the socket.
+	///
+	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
+	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
 	pub async fn send(&self, frame: &CanFrame) -> std::io::Result<()> {
 		self.io.async_io(tokio::io::Interest::WRITABLE, |inner| {
 			inner.send(&frame.inner)
 		}).await
+	}
+
+	/// Send a frame over the socket with a timeout.
+	///
+	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
+	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
+	///
+	/// The timeout can be a [`std::time::Duration`], [`std::time::Instant`], [`tokio::time::Instant`] or any other implementator of the [`Deadline`] trait.
+	pub async fn send_timeout(&self, frame: &CanFrame, timeout: impl Deadline) -> std::io::Result<()> {
+		let deadline = timeout.deadline().into();
+		tokio::time::timeout_at(deadline, self.send(frame)).await?
 	}
 
 	/// Send a frame over a particular interface.
@@ -82,6 +97,20 @@ impl CanSocket {
 		}).await
 	}
 
+	/// Send a frame over a particular interface.
+	///
+	/// The interface must match the interface the socket was bound to,
+	/// or the socket must have been bound to all interfaces.
+	///
+	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
+	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
+	///
+	/// The timeout can be a [`std::time::Duration`], [`std::time::Instant`], [`tokio::time::Instant`] or any other implementator of the [`Deadline`] trait.
+	pub async fn send_to_timeout(&self, frame: &CanFrame, interface: &CanInterface, timeout: impl Deadline) -> std::io::Result<()> {
+		let deadline = timeout.deadline().into();
+		tokio::time::timeout_at(deadline, self.send_to(frame, interface)).await?
+	}
+
 	/// Receive a frame from the socket.
 	pub async fn recv(&self) -> std::io::Result<CanFrame> {
 		self.io.async_io(tokio::io::Interest::READABLE, |inner| {
@@ -89,6 +118,14 @@ impl CanSocket {
 				inner: inner.recv()?,
 			})
 		}).await
+	}
+
+	/// Receive a frame from the socket with a timeout.
+	///
+	/// The timeout can be a [`std::time::Duration`], [`std::time::Instant`], [`tokio::time::Instant`] or any other implementator of the [`Deadline`] trait.
+	pub async fn recv_timeout(&self, timeout: impl Deadline) -> std::io::Result<CanFrame> {
+		let deadline = timeout.deadline().into();
+		tokio::time::timeout_at(deadline, self.recv()).await?
 	}
 
 	/// Receive a frame from the socket, including information about which interface the frame was received on.
@@ -99,6 +136,14 @@ impl CanSocket {
 			let interface = CanInterface { inner: interface };
 			Ok((frame, interface))
 		}).await
+	}
+
+	/// Receive a frame from the socket with a timeout, including information about which interface the frame was received on.
+	///
+	/// The timeout can be a [`std::time::Duration`], [`std::time::Instant`], [`tokio::time::Instant`] or any other implementator of the [`Deadline`] trait.
+	pub async fn recv_from_timeout(&self, timeout: impl Deadline) -> std::io::Result<(CanFrame, CanInterface)> {
+		let deadline = timeout.deadline().into();
+		tokio::time::timeout_at(deadline, self.recv_from()).await?
 	}
 
 	/// Set the list of filters on the socket.
