@@ -4,3 +4,6 @@ members = [
 	"can-socket",
 	"canopen-tokio",
 ]
+
+[patch.crates-io]
+trybuild = { git = "https://github.com/de-vri-es/trybuild", branch = "full-build" }
