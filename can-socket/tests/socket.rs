@@ -103,6 +103,7 @@ impl Drop for TempInterface {
 }
 
 #[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
 fn can_talk() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -118,6 +119,7 @@ fn can_talk() {
 }
 
 #[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
 fn can_send_rtr() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -132,6 +134,7 @@ fn can_send_rtr() {
 }
 
 #[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
 fn local_addr() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));

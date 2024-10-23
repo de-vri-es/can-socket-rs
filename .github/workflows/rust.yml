@@ -15,12 +15,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --workspace --all-targets
+      run: cargo build --workspace --all-targets --features=ignore-vcan-tests
     - name: Build
-      run: cargo clippy --workspace --all-targets
-    - name: Load vcan kernel module
-      run: |
-        ls -R /lib/modules/6.5.0-1025-azure
-        sudo modprobe vcan
+      run: cargo clippy --workspace --all-targets --features=ignore-vcan-tests
     - name: Run tests
-      run: cargo test --workspace --all-targets
+      run: cargo test --workspace --all-targets --features=ignore-vcan-tests
