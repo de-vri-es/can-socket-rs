@@ -1,10 +1,13 @@
+#![cfg_attr(feature = "doc-cfg", feature(doc_cfg))]
+
 pub mod error;
 
 #[cfg(feature = "tokio")]
+#[cfg_attr(feature = "doc-cfg", doc(cfg(feature = "tokio")))]
 pub mod tokio;
 
-mod can_id;
-pub use can_id::{CanBaseId, CanExtendedId, CanId, MAX_CAN_ID_BASE, MAX_CAN_ID_EXTENDED};
+mod id;
+pub use id::{ExtendedId, CanId, StandardId, MAX_EXTENDED_ID, MAX_STANDARD_ID};
 
 mod filter;
 pub use filter::CanFilter;
@@ -29,8 +32,8 @@ pub trait Deadline {
 impl Deadline for std::time::Duration {
 	/// Get the instant at which the timeout/deadline expires.
 	///
-	/// If the `"tokio"` feature is enabled, this uses [`tokio::time::Instant`] to compute the deadline.
-	/// This means that [`tokio::time::pause()`] and [`tokio::time::advance()`] will work as expected.
+	/// If the `"tokio"` feature is enabled, this uses [`tokio::time::Instant`][::tokio::time::Instant] to compute the deadline.
+	/// This means that [`tokio::time::pause()`][::tokio::time::pause] and [`tokio::time::advance()`][::tokio::time::advance] will work as expected.
 	fn deadline(&self) -> std::time::Instant {
 		// Use tokio's `Instant::now()` when the `tokio` feature is enabled.
 		// This ensures that tokio::time::pause() and tokio::time::advance() will work.

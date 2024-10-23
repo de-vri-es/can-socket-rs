@@ -2,7 +2,7 @@ use filedesc::FileDesc;
 use std::ffi::{c_int, c_void, CString};
 use std::mem::MaybeUninit;
 
-use crate::{CanBaseId, CanExtendedId, CanId};
+use crate::{StandardId, ExtendedId, CanId};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -45,7 +45,7 @@ impl CanFrame {
 		let mut inner: can_frame = unsafe { std::mem::zeroed() };
 		inner.can_id = match id {
 			CanId::Extended(x) => x.as_u32() | libc::CAN_EFF_FLAG,
-			CanId::Base(x) => x.as_u16().into(),
+			CanId::Standard(x) => x.as_u16().into(),
 		};
 		inner.can_dlc = data.len() as u8;
 		inner.data[..data.len()].copy_from_slice(data);
@@ -58,7 +58,7 @@ impl CanFrame {
 		let mut inner: can_frame = unsafe { std::mem::zeroed() };
 		inner.can_id = match id {
 			CanId::Extended(x) => x.as_u32() | libc::CAN_EFF_FLAG,
-			CanId::Base(x) => x.as_u16().into(),
+			CanId::Standard(x) => x.as_u16().into(),
 		};
 		inner.can_id |= libc::CAN_RTR_FLAG;
 		inner.can_dlc = 0;
@@ -70,7 +70,7 @@ impl CanFrame {
 		// Unwrap should be fine: the kernel should never give us an invalid CAN ID,
 		// and the Rust constructor doesn't allow it.
 		if self.inner.can_id & libc::CAN_EFF_FLAG == 0 {
-			CanId::new_base((self.inner.can_id & libc::CAN_SFF_MASK) as u16).unwrap()
+			CanId::new_standard((self.inner.can_id & libc::CAN_SFF_MASK) as u16).unwrap()
 		} else {
 			CanId::new_extended(self.inner.can_id & libc::CAN_EFF_MASK).unwrap()
 		}
@@ -344,7 +344,7 @@ impl Socket {
 }
 
 impl CanFilter {
-	pub const fn new_base(id: CanBaseId) -> Self {
+	pub const fn new_standard(id: StandardId) -> Self {
 		Self {
 			filter: libc::can_filter {
 				can_id: id.as_u16() as u32,
@@ -353,7 +353,7 @@ impl CanFilter {
 		}
 	}
 
-	pub const fn new_extended(id: CanExtendedId) -> Self {
+	pub const fn new_extended(id: ExtendedId) -> Self {
 		Self {
 			filter: libc::can_filter {
 				can_id: id.as_u32(),
@@ -375,7 +375,7 @@ impl CanFilter {
 	}
 
 	#[must_use = "returns a new filter, does not modify the existing filter"]
-	pub const fn match_base_extended(mut self) -> Self {
+	pub const fn match_frame_format(mut self) -> Self {
 		self.filter.can_mask |= libc::CAN_EFF_FLAG;
 		self
 	}

@@ -8,8 +8,8 @@ impl std::error::Error for InvalidId {}
 impl std::fmt::Display for InvalidId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match (self.id, self.extended) {
-			(Some(id), false) => write!(f, "invalid base (non-extened) CAN ID: 0x{:03X}, maximum valid value is 0x7FF", id),
-			(None, false) => write!(f, "invalid base (non-extened) CAN ID: allowed values are 0 to 0x7FF"),
+			(Some(id), false) => write!(f, "invalid standard CAN ID: 0x{:03X}, maximum valid value is 0x7FF", id),
+			(None, false) => write!(f, "invalid standard CAN ID: allowed values are 0 to 0x7FF"),
 			(Some(id), true) => write!(f, "invalid extened CAN ID: 0x{:08X}, maximum valid value is 0x1FFF_FFFF", id),
 			(None, true) => write!(f, "invalid extened CAN ID, allowed values are 0 to 0x1FFF_FFFF"),
 		}

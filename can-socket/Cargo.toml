@@ -13,6 +13,9 @@ publish = ["crates-io"]
 
 [features]
 ignore-vcan-tests = []
+tokio = ["dep:tokio"]
+doc = ["tokio", "tokio?/test-util"]
+doc-cfg = []
 
 [dependencies]
 filedesc = "0.6.3"
@@ -24,5 +27,8 @@ assert2 = "0.3.14"
 can-socket = { path = ".", features = ["tokio"] }
 clap = { version = "4.4.4", features = ["derive"] }
 rand = "0.8.5"
-tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread", "test-util"] }
 trybuild = { version = "1.0.101", features = ["diff"] }
+
+[package.metadata.docs.rs]
+features = ["doc"]

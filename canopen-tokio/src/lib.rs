@@ -4,7 +4,7 @@
 #![warn(missing_debug_implementations)]
 
 use can_socket::tokio::CanSocket;
-use can_socket::{CanFrame, CanBaseId};
+use can_socket::{CanFrame, StandardId};
 use std::num::NonZeroU8;
 use std::time::{Duration, Instant};
 
@@ -248,8 +248,8 @@ impl CanOpenSocket {
 	///
 	/// Messages already in the read queue are not returned.
 	/// If a message does not match the filter, it is added to the read queue.
-	async fn recv_new_by_can_id(&mut self, can_id: CanBaseId, timeout: Duration) -> std::io::Result<Option<CanFrame>> {
-		self.recv_new_filtered(|frame| !frame.is_rtr() && frame.id().to_base().ok() == Some(can_id), timeout).await
+	async fn recv_new_by_can_id(&mut self, can_id: StandardId, timeout: Duration) -> std::io::Result<Option<CanFrame>> {
+		self.recv_new_filtered(|frame| !frame.is_rtr() && frame.id().to_standard().is_ok_and(|x| x == can_id), timeout).await
 	}
 }
 

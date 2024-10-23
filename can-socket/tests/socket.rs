@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use assert2::{assert, let_assert};
-use can_socket::{CanBaseId, CanExtendedId, CanFilter, CanFrame, CanSocket};
+use can_socket::{StandardId, ExtendedId, CanFilter, CanFrame, CanSocket};
 
 fn random_string(len: usize) -> String {
 	use rand::Rng;
@@ -242,11 +242,11 @@ fn filter_id_type() {
 	assert!(let Ok(()) = socket_b.set_nonblocking(true));
 
 	assert!(let Ok(()) = socket_b.set_filters(&[
-		CanFilter::new_base(0.into()).match_base_extended(),
+		CanFilter::new_standard(0.into()).match_frame_format(),
 	]));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanExtendedId::from(5u8), [1])));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanBaseId::from(6), [2])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(ExtendedId::from(5u8), [1])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(StandardId::from(6), [2])));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 6);
 	assert!(frame.data() == [2]);

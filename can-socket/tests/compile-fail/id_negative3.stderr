@@ -1,8 +1,8 @@
 error[E0277]: the trait bound `u32: Neg` is not satisfied
- --> tests/compile-fail/can_id_negative3.rs:2:38
+ --> tests/compile-fail/id_negative3.rs:2:42
   |
-2 |     let _id = can_socket::id!(extended: -2);
-  |                                         ^^ the trait `Neg` is not implemented for `u32`
+2 |     let _id = can_socket::can_id!(extended: -2);
+  |                                             ^^ the trait `Neg` is not implemented for `u32`
   |
   = help: the following other types implement trait `Neg`:
             &f128
@@ -16,9 +16,9 @@ error[E0277]: the trait bound `u32: Neg` is not satisfied
           and $N others
 
 error[E0600]: cannot apply unary operator `-` to type `u32`
- --> tests/compile-fail/can_id_negative3.rs:2:38
+ --> tests/compile-fail/id_negative3.rs:2:42
   |
-2 |     let _id = can_socket::id!(extended: -2);
-  |                                         ^^ cannot apply unary operator `-`
+2 |     let _id = can_socket::can_id!(extended: -2);
+  |                                             ^^ cannot apply unary operator `-`
   |
   = note: unsigned values cannot be negated

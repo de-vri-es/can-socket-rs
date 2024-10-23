@@ -3,15 +3,15 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::time::Duration;
 
-use can_socket::{CanFrame, CanBaseId};
+use can_socket::{CanFrame, StandardId};
 use crate::CanOpenSocket;
 
 const NMT_COB_ID: u8 = 0x000;
 
 const FUNCTION_HEARTBEAT: u16 = 0x700;
 
-fn heartbeat_id(node_id: u8) -> CanBaseId {
-	CanBaseId::new(FUNCTION_HEARTBEAT | u16::from(node_id)).unwrap()
+fn heartbeat_id(node_id: u8) -> StandardId {
+	StandardId::new(FUNCTION_HEARTBEAT | u16::from(node_id)).unwrap()
 }
 
 
