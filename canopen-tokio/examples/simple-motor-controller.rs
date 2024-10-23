@@ -209,7 +209,7 @@ async fn do_loop(socket: &mut CanOpenSocket, options: &Options) -> Result<(), ()
 ///   * Send a SYNC command.
 ///   * Receive the feedback PDO.
 async fn do_step(socket: &mut CanOpenSocket, velocity_target: u16, deadline: Instant) -> Result<(), ()> {
-	socket.send_frame(&CanFrame::new(CanId::new(0x201).unwrap(), &velocity_target.to_le_bytes(), None).unwrap())
+	socket.send_frame(&CanFrame::new(CanId::new(0x201).unwrap(), velocity_target.to_le_bytes()))
 		.await
 		.map_err(|e| log::error!("Failed to send PDO 0x201: {e}"))?;
 	socket.send_sync(None)

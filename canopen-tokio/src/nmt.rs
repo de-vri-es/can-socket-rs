@@ -101,9 +101,8 @@ pub async fn send_nmt_command(bus: &mut CanOpenSocket, node_id: u8, command: Nmt
 	log::debug!("Sending NMT command {command:?} to node 0x{node_id:02X} (timeout {timeout:?})");
 	let command_frame = CanFrame::new(
 		NMT_COB_ID,
-		&[command as u8, node_id],
-		None,
-	).unwrap();
+		[command as u8, node_id],
+	);
 	bus.socket.send(&command_frame)
 		.await
 		.map_err(NmtError::SendFailed)?;

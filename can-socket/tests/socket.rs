@@ -111,7 +111,7 @@ fn can_talk() {
 	assert!(let Ok(()) = socket_a.set_nonblocking(true));
 	assert!(let Ok(()) = socket_b.set_nonblocking(true));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, [1, 2, 3])));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 1);
 	assert!(frame.is_rtr() == false);
@@ -127,7 +127,7 @@ fn can_send_rtr() {
 	assert!(let Ok(()) = socket_a.set_nonblocking(true));
 	assert!(let Ok(()) = socket_b.set_nonblocking(true));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new_rtr(2u8, 3).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new_rtr(2u8)));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 2);
 	assert!(frame.is_rtr() == true);
@@ -156,7 +156,7 @@ fn enable_recv_own_message() {
 	assert!(let Ok(()) = socket_a.set_receive_own_messages(true));
 	assert!(let Ok(true) = socket_a.get_receive_own_messages());
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, [1, 2, 3])));
 	let_assert!(Ok(frame) = socket_a.recv());
 	assert!(frame.id().as_u32() == 1);
 	assert!(frame.is_rtr() == false);
@@ -180,7 +180,7 @@ fn disable_loopback() {
 
 	// It seems vcan pretends all frames from other sockets are non-local.
 	// So we test by enabling `receive_own_messages` but disabling `loopback` and see if our own message gets dropped as expected.
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, [1, 2, 3])));
 	let_assert!(Err(e) = socket_a.recv());
 	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
 }
@@ -198,8 +198,8 @@ fn filter_exact_id() {
 		CanFilter::new(8u8.into()).match_exact_id()
 	]));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(8u8, &[4, 5, 6], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, [1, 2, 3])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(8u8, [4, 5, 6])));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 8);
 	assert!(frame.data() == [4, 5, 6]);
@@ -221,9 +221,9 @@ fn filter_exact_id_rtr_only() {
 		CanFilter::new(8u8.into()).match_exact_id().match_rtr_only(),
 	]));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(8u8, &[4, 5, 6], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new_rtr(8u8, 8).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, [1, 2, 3])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(8u8, [4, 5, 6])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new_rtr(8u8)));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 8);
 	assert!(frame.is_rtr());
@@ -245,8 +245,8 @@ fn filter_id_type() {
 		CanFilter::new_base(0.into()).match_base_extended(),
 	]));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanExtendedId::from(5u8), &[1], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanBaseId::from(6), &[2], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanExtendedId::from(5u8), [1])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanBaseId::from(6), [2])));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 6);
 	assert!(frame.data() == [2]);
@@ -268,9 +268,9 @@ fn filter_mask() {
 		CanFilter::new_extended(0x1200u16.into()).match_id_mask(0xFFFFFF00),
 	]));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1300u16, &[1], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1200u16, &[2], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x12FFu16, &[3], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1300u16, [1])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1200u16, [2])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x12FFu16, [3])));
 
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 0x1200);
@@ -298,11 +298,11 @@ fn multiple_filters() {
 		CanFilter::new_extended(0x2000u16.into()).match_id_mask(0xFFFFFF00),
 	]));
 
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1300u16, &[1], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1200u16, &[2], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x12FFu16, &[3], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1900u16, &[4], None).unwrap()));
-	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x2002u16, &[5], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1300u16, [1])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1200u16, [2])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x12FFu16, [3])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1900u16, [4])));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x2002u16, [5])));
 
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 0x1200);

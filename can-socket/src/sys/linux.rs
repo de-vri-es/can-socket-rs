@@ -39,20 +39,8 @@ pub struct CanFilter {
 }
 
 impl CanFrame {
-	pub fn new(id: impl Into<CanId>, data: &[u8], data_length_code: Option<u8>) -> std::io::Result<Self> {
+	pub fn new(id: impl Into<CanId>, data: &crate::CanData) -> Self {
 		let id = id.into();
-
-		if data.len() > 8 {
-			return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "maximum CAN data length is 8 bytes"));
-		}
-		if let Some(data_length_code) = data_length_code {
-			if data.len() != 8 {
-				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "data_length_code can only be set if data length is 8"));
-			}
-			if !(9..=15).contains(&data_length_code) {
-				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "data_length_code must be in the range 9 to 15 (inclusive)"));
-			}
-		}
 
 		let mut inner: can_frame = unsafe { std::mem::zeroed() };
 		inner.can_id = match id {
@@ -60,17 +48,12 @@ impl CanFrame {
 			CanId::Base(x) => x.as_u16().into(),
 		};
 		inner.can_dlc = data.len() as u8;
-		inner.len8_dlc = data_length_code.unwrap_or(0);
 		inner.data[..data.len()].copy_from_slice(data);
-		Ok(Self { inner })
+		Self { inner }
 	}
 
-	/// Create a new RTR (request-to-read) frame.
-	pub fn new_rtr(id: impl Into<CanId>, data_len: u8) -> std::io::Result<Self> {
+	pub fn new_rtr(id: impl Into<CanId>) -> Self {
 		let id = id.into();
-		if data_len > 8 {
-			return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "maximum CAN data length is 8 bytes"));
-		}
 
 		let mut inner: can_frame = unsafe { std::mem::zeroed() };
 		inner.can_id = match id {
@@ -78,9 +61,9 @@ impl CanFrame {
 			CanId::Base(x) => x.as_u16().into(),
 		};
 		inner.can_id |= libc::CAN_RTR_FLAG;
-		inner.can_dlc = data_len;
+		inner.can_dlc = 0;
 		inner.len8_dlc = 0;
-		Ok(Self { inner })
+		Self { inner }
 	}
 
 	pub fn id(&self) -> CanId {
@@ -98,14 +81,31 @@ impl CanFrame {
 	}
 
 	pub fn data(&self) -> &[u8] {
-		&self.inner.data[..self.inner.can_dlc as usize]
+		if self.is_rtr() {
+			&self.inner.data[..0]
+		} else {
+			&self.inner.data[..self.inner.can_dlc as usize]
+		}
 	}
 
-	pub fn data_length_code(&self) -> Option<u8> {
-		if self.inner.len8_dlc > 0 {
-			Some(self.inner.len8_dlc)
+	pub fn set_data_length_code(&mut self, dlc: u8) -> Result<(), ()> {
+		if dlc > 15 {
+			return Err(());
+		}
+		self.inner.can_dlc = dlc.clamp(0, 8);
+		if dlc > 8 {
+			self.inner.len8_dlc = dlc;
 		} else {
-			None
+			self.inner.len8_dlc = 0;
+		}
+		Ok(())
+	}
+
+	pub fn data_length_code(&self) -> u8 {
+		if self.inner.can_dlc == 8 && self.inner.len8_dlc > 8 {
+			self.inner.len8_dlc
+		} else {
+			self.inner.can_dlc
 		}
 	}
 

@@ -1,5 +1,5 @@
 # Unreleased
-- [add][minor] Add `id!()`, `base_id!()` and `extended_id!()` macros to construct compile time checked CAN IDs.
+- [change][major] Refactor `CanFrame` API.
 
 # Version 0.1.6 - 2024-10-23
 - [add][minor] Add `get_loopback()`/`set_loopback()`.
