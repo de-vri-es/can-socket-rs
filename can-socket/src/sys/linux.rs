@@ -2,7 +2,7 @@ use filedesc::FileDesc;
 use std::ffi::{c_int, c_void, CString};
 use std::mem::MaybeUninit;
 
-use crate::{StandardId, ExtendedId, CanId};
+use crate::{CanData, CanId, ExtendedId, StandardId};
 
 #[repr(C)]
 #[derive(Copy, Clone, Debug)]
@@ -80,11 +80,14 @@ impl CanFrame {
 		self.inner.can_id & libc::CAN_RTR_FLAG != 0
 	}
 
-	pub fn data(&self) -> &[u8] {
+	pub fn data(&self) -> Option<CanData> {
 		if self.is_rtr() {
-			&self.inner.data[..0]
+			None
 		} else {
-			&self.inner.data[..self.inner.can_dlc as usize]
+			Some(CanData {
+				data: self.inner.data,
+				len: self.inner.can_dlc,
+			})
 		}
 	}
 
