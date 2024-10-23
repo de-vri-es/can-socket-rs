@@ -3,6 +3,115 @@ use crate::error::{InvalidId, ParseIdError};
 pub const MAX_CAN_ID_BASE: u16 = 0x7FF;
 pub const MAX_CAN_ID_EXTENDED: u32 = 0x1FFF_FFFF;
 
+/// Construct a [`CanId`] (base or extended) that is checked at compile time.
+///
+/// You can use any expression that can be evaluated at compile time and results in a `u32`.
+///
+/// By default, if the value fits in a base CAN ID, a base CAN ID is created.
+/// You can also explicitly ask for a base or extended ID.
+///
+/// Usage:
+/// ```
+/// # use can_socket::{CanId, id};
+/// let id: CanId = id!(0x100 | 0x005);
+/// assert2::let_assert!(CanId::Base(id) = id);
+/// assert2::assert!(id.as_u16() == 0x105);
+/// ```
+///
+/// Force construction of a `CanId::Base` (does not compile because the ID only fits as an extended ID):
+/// ```compile_fail
+/// # use can_socket::{CanId, id};
+/// let id: CanId = id!(base: 0x10 << 16 | 0x50);
+/// ```
+///
+/// Force construction of a `CanId::Extended`:
+/// ```
+/// # use can_socket::{CanId, id};
+/// let id: CanId = id!(extended: 0x100 | 0x005);
+/// assert2::let_assert!(CanId::Extended(id) = id);
+/// assert2::assert!(id.as_u32() == 0x105);
+/// ```
+#[macro_export]
+macro_rules! id {
+	($n:expr) => {
+		{
+			#[allow(clippy::all)]
+			const { ::core::assert!(($n) <= $crate::MAX_CAN_ID_EXTENDED, "invalid CAN ID") };
+			unsafe {
+				if ($n) as u32 <= $crate::MAX_CAN_ID_BASE as u32 {
+					$crate::CanId::Base($crate::CanBaseId::new_unchecked(($n) as u16))
+				} else {
+					$crate::CanId::Extended($crate::CanExtendedId::new_unchecked($n))
+				}
+			}
+		}
+	};
+	(base: $n:expr) => {
+		$crate::CanId::Base($crate::base_id!($n))
+	};
+	(extended:  $n:expr) => {
+		$crate::CanId::Extended($crate::extended_id!($n))
+	};
+}
+
+/// Construct a [`CanBaseId`] that is checked at compile time.
+///
+/// You can use any expression that can be evaluated at compile time and results in a `u16`.
+///
+/// Usage:
+/// ```
+/// # use assert2::assert;
+/// # use can_socket::{CanBaseId, base_id};
+/// let id: CanBaseId = base_id!(0x100 | 0x005);
+/// assert!(id.as_u16() == 0x105);
+/// ```
+///
+/// Will not accept invalid IDs:
+/// ```compile_fail
+/// # use can_socket::{CanBaseId, base_id};
+/// let id: CanBaseId = base_id!(0x800);
+/// ```
+#[macro_export]
+macro_rules! base_id {
+	($n:expr) => {
+		{
+			#[allow(clippy::all)]
+			const { ::core::assert!(($n) <= $crate::MAX_CAN_ID_BASE, "invalid base CAN ID") };
+			unsafe {
+				$crate::CanBaseId::new_unchecked($n)
+			}
+		}
+	};
+}
+
+/// Construct a [`CanExtendedId`] that is checked at compile time.
+///
+/// You can use any expression that can be evaluated at compile time and results in a `u32`.
+///
+/// Usage:
+/// ```
+/// # use assert2::assert;
+/// # use can_socket::{CanExtendedId, extended_id};
+/// let id: CanExtendedId = extended_id!(0x10 << 16 | 0x50);
+/// assert!(id.as_u32() == 0x10_0050);
+/// ```
+///
+/// Will not accept invalid IDs:
+/// ```compile_fail
+/// # use can_socket::{CanBaseId, extended_id};
+/// let id: CanExtendedId = extended_id!(0x2000_0000);
+/// ```
+#[macro_export]
+macro_rules! extended_id {
+	($n:expr) => {
+		unsafe {
+			#[allow(clippy::all)]
+			const { ::core::assert!(($n) <= $crate::MAX_CAN_ID_EXTENDED, "invalid extended CAN ID"); };
+			$crate::CanExtendedId::new_unchecked($n)
+		}
+	};
+}
+
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(C)]
 pub enum CanId {
@@ -110,6 +219,17 @@ impl CanBaseId {
 	pub const fn as_u16(self) -> u16 {
 		self.id
 	}
+
+	/// Create a new base CAN ID without checking for validity.
+	///
+	/// # Safety
+	/// The given ID must be a valid base CAN ID (id <= [`MAX_CAN_ID_BASE`]).
+	pub const unsafe fn new_unchecked(id: u16) -> Self {
+		debug_assert!(id <= MAX_CAN_ID_BASE);
+		Self {
+			id
+		}
+	}
 }
 
 impl CanExtendedId {
@@ -134,6 +254,17 @@ impl CanExtendedId {
 
 	pub const fn as_u32(self) -> u32 {
 		self.id
+	}
+
+	/// Create a new extended CAN ID without checking for validity.
+	///
+	/// # Safety
+	/// The given ID must be a valid extended CAN ID (id <= [`MAX_CAN_ID_EXTENDED`]).
+	pub const unsafe fn new_unchecked(id: u32) -> Self {
+		debug_assert!(id <= MAX_CAN_ID_EXTENDED);
+		Self {
+			id
+		}
 	}
 }
 
