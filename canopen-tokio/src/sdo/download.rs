@@ -173,7 +173,7 @@ fn make_sdo_expedited_download_command(
 		data.get(3).copied().unwrap_or(0),
 	];
 
-	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
+	CanFrame::new(address.command_id(node_id), data)
 }
 
 /// Make an SDO initiate segmented download command.
@@ -196,7 +196,7 @@ fn make_sdo_initiate_segmented_download_command(
 		len[3],
 	];
 
-	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
+	CanFrame::new(address.command_id(node_id), data)
 }
 
 /// Make an SDO download segment command.
@@ -223,7 +223,7 @@ fn make_sdo_segment_download_command(
 		data.get(5).copied().unwrap_or(0),
 		data.get(6).copied().unwrap_or(0),
 	];
-	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
+	CanFrame::new(address.command_id(node_id), data)
 }
 
 /// Parse an SDO download segment response.

@@ -10,7 +10,7 @@ mod filter;
 pub use filter::CanFilter;
 
 mod frame;
-pub use frame::CanFrame;
+pub use frame::{CanFrame, CanData};
 
 mod interface;
 pub use interface::CanInterface;

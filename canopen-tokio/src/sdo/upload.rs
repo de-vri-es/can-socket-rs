@@ -150,7 +150,7 @@ fn make_sdo_initiate_upload_request(
 		object.subindex,
 		0, 0, 0, 0,
 	];
-	CanFrame::new(sdo.command_id(node_id), &data, None).unwrap()
+	CanFrame::new(sdo.command_id(node_id), data)
 }
 
 /// Make an SDO upload segment request.
@@ -160,7 +160,7 @@ fn make_sdo_upload_segment_request(address: SdoAddress, node_id: u8, toggle: boo
 		0, 0, 0,
 		0, 0, 0, 0,
 	];
-	CanFrame::new(address.command_id(node_id), &data, None).unwrap()
+	CanFrame::new(address.command_id(node_id), data)
 }
 
 /// An SDO initiate upload response.

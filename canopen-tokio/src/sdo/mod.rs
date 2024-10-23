@@ -209,7 +209,7 @@ async fn send_abort_transfer_command(
 		reason[2],
 		reason[3],
 	];
-	let command = CanFrame::new(address.command_id(node_id), &data, None).unwrap();
+	let command = CanFrame::new(address.command_id(node_id), data);
 	bus.socket.send(&command).await
 		.map_err(SdoError::SendFailed)
 }

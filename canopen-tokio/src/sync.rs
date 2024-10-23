@@ -15,11 +15,11 @@ pub(crate) async fn send_sync(
 	let frame = match counter {
 		Some(counter) => {
 			log::debug!("└─ Counter: {counter}");
-			CanFrame::new(SYNC_DEFAULT_COB_ID, &[counter.get()], None).unwrap()
+			CanFrame::new(SYNC_DEFAULT_COB_ID, [counter.get()])
 		},
 		None => {
 			log::debug!("└─ Counter: no counter");
-			CanFrame::new(SYNC_DEFAULT_COB_ID, &[], None).unwrap()
+			CanFrame::new(SYNC_DEFAULT_COB_ID, [])
 		}
 	};
 

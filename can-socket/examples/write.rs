@@ -16,14 +16,6 @@ struct Options {
 	#[clap(long)]
 	rtr: Option<u8>,
 
-	/// The data length code to send.
-	///
-	/// May only be specified for messages of size 8,
-	/// and may only be a value from 9 to 15 (inclusive).
-	#[clap(long)]
-	#[clap(conflicts_with = "rtr")]
-	data_length_code: Option<u8>,
-
 	/// Number of times to send the frame.
 	///
 	/// Will keep sending forever if you specify 0.
@@ -45,10 +37,11 @@ fn main() {
 
 fn do_main(options: Options) -> Result<(), ()> {
 	let frame = if let Some(len) = options.rtr {
-		CanFrame::new_rtr(options.id, len)
+		CanFrame::new_rtr(options.id)
+			.with_data_length_code(len)
 			.map_err(|e| eprintln!("Invalid input: {e}"))?
 	} else {
-		CanFrame::new(options.id, &options.data, options.data_length_code)
+		CanFrame::try_new(options.id, &options.data)
 			.map_err(|e| eprintln!("Invalid input: {e}"))?
 	};
 
