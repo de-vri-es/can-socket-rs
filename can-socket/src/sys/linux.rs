@@ -1,5 +1,5 @@
 use filedesc::FileDesc;
-use std::ffi::{c_int, c_uint, c_void, CString};
+use std::ffi::{c_int, c_void, CString};
 use std::mem::MaybeUninit;
 
 use crate::{CanBaseId, CanExtendedId, CanId};
@@ -286,77 +286,60 @@ impl Socket {
 	}
 
 	pub fn set_filters(&self, filters: &[crate::CanFilter]) -> std::io::Result<()> {
-		let len = std::mem::size_of_val(filters)
-			.try_into()
-			.map_err(|_| std::io::Error::new(std::io::ErrorKind::InvalidInput, "filter list too large"))?;
 		unsafe {
-			check_int(libc::setsockopt(
-				self.fd.as_raw_fd(),
+			set_socket_option_slice(
+				&self.fd,
 				libc::SOL_CAN_RAW,
 				libc::CAN_RAW_FILTER,
-				filters.as_ptr().cast(),
-				len,
-			))?;
+				filters,
+			)?;
 			Ok(())
 		}
 	}
 
 	pub fn get_loopback(&self) -> std::io::Result<bool> {
-		let mut enable: c_int = 0;
-		let mut len: c_uint = std::mem::size_of::<c_int>() as c_uint;
-		unsafe {
-			check_int(libc::getsockopt(
-				self.fd.as_raw_fd(),
+		let enabled: c_int = unsafe {
+			get_socket_option(
+				&self.fd,
 				libc::SOL_CAN_RAW,
 				libc::CAN_RAW_LOOPBACK,
-				&mut enable as *mut c_int as *mut c_void,
-				&mut len,
-			))?;
-		}
-		Ok(enable != 0)
+			)?
+		};
+		Ok(enabled != 0)
 	}
 
 	pub fn set_loopback(&self, enable: bool) -> std::io::Result<()> {
-		let enabled = c_int::from(enable);
 		unsafe {
-			check_int(libc::setsockopt(
-				self.fd.as_raw_fd(),
+			set_socket_option(
+				&self.fd,
 				libc::SOL_CAN_RAW,
 				libc::CAN_RAW_LOOPBACK,
-				&enabled as *const c_int as *const c_void,
-				std::mem::size_of_val(&enabled) as u32,
-			))?;
+				&c_int::from(enable),
+			)?;
 		}
 		Ok(())
 	}
 
 	pub fn get_receive_own_messages(&self) -> std::io::Result<bool> {
-		let mut enabled: c_int = 0;
-		let mut len: c_uint = std::mem::size_of::<c_int>() as c_uint;
-		unsafe {
-			check_int(libc::getsockopt(
-				self.fd.as_raw_fd(),
+		let enabled: c_int = unsafe {
+			get_socket_option(
+				&self.fd,
 				libc::SOL_CAN_RAW,
 				libc::CAN_RAW_RECV_OWN_MSGS,
-				&mut enabled as *mut c_int as *mut c_void,
-				&mut len,
-			))?;
-		}
+			)?
+		};
 		Ok(enabled != 0)
 	}
 
 	pub fn set_receive_own_messages(&self, enable: bool) -> std::io::Result<()> {
-		let enable = c_int::from(enable);
 		unsafe {
-			check_int(libc::setsockopt(
-				self.fd.as_raw_fd(),
+			set_socket_option(
+				&self.fd,
 				libc::SOL_CAN_RAW,
 				libc::CAN_RAW_RECV_OWN_MSGS,
-				&enable as *const c_int as *const c_void,
-				std::mem::size_of_val(&enable) as u32,
-			))?;
+				&c_int::from(enable),
+			)
 		}
-		Ok(())
 	}
 }
 
@@ -456,6 +439,30 @@ fn check_isize(return_value: isize) -> std::io::Result<isize> {
 	} else {
 		Ok(return_value)
 	}
+}
+
+unsafe fn set_socket_option<T: Copy>(socket: &FileDesc, level: c_int, option: c_int, value: &T) -> std::io::Result<()> {
+	let len = std::mem::size_of_val(value).try_into().map_err(|_| std::io::ErrorKind::InvalidInput)?;
+	let value: *const T = value;
+	check_int(libc::setsockopt(socket.as_raw_fd(), level, option, value.cast(), len))?;
+	Ok(())
+}
+
+unsafe fn set_socket_option_slice<T: Copy>(socket: &FileDesc, level: c_int, option: c_int, value: &[T]) -> std::io::Result<()> {
+	let len = std::mem::size_of_val(value).try_into().map_err(|_| std::io::ErrorKind::InvalidInput)?;
+	let value = value.as_ptr();
+	check_int(libc::setsockopt(socket.as_raw_fd(), level, option, value.cast(), len))?;
+	Ok(())
+}
+
+unsafe fn get_socket_option<T: Copy + Default>(socket: &FileDesc, level: c_int, option: c_int) -> std::io::Result<T> {
+	let mut value = T::default();
+	let mut len = std::mem::size_of::<T>().try_into().unwrap();
+	{
+		let value: *mut T = &mut value;
+		check_int(libc::getsockopt(socket.as_raw_fd(), level, option, value.cast(), &mut len))?;
+	}
+	Ok(value)
 }
 
 impl std::os::fd::AsFd for Socket {
