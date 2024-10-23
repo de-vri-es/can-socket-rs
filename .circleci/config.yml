@@ -1,0 +1,23 @@
+version: 2.1
+jobs:
+  test-rust:
+    docker:
+      - image: cimg/rust:1.80
+    steps:
+      - checkout
+      - restore_cache:
+          key: cargo-{{ checksum "Cargo.lock" }}
+      - run:
+          command: sudo apt-get update && sudo apt-get install iproute2
+      - run:
+          command: cargo build --workspace --all-targets
+      - run:
+          command: cargo test --workspace --all-targets
+      - save_cache:
+          key: cargo-{{ checksum "Cargo.lock" }}
+          paths:
+            - ~/.cargo
+workflows:
+  build-and-test:
+    jobs:
+      - test-rust
