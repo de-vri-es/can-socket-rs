@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use assert2::{assert, let_assert};
-use can_socket::{CanFrame, CanSocket};
+use can_socket::{CanBaseId, CanExtendedId, CanFilter, CanFrame, CanSocket};
 
 fn random_string(len: usize) -> String {
 	use rand::Rng;
@@ -142,4 +142,180 @@ fn local_addr() {
 	assert!(local_addr.index() != 0);
 	let_assert!(Ok(name) = local_addr.get_name(), "interface index: {}", local_addr.index());
 	assert!(name == interface.name());
+}
+
+#[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+fn enable_recv_own_message() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	assert!(let Ok(()) = socket_a.set_nonblocking(true));
+
+	assert!(let Ok(true) = socket_a.get_loopback());
+	assert!(let Ok(false) = socket_a.get_receive_own_messages());
+	assert!(let Ok(()) = socket_a.set_receive_own_messages(true));
+	assert!(let Ok(true) = socket_a.get_receive_own_messages());
+
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
+	let_assert!(Ok(frame) = socket_a.recv());
+	assert!(frame.id().as_u32() == 1);
+	assert!(frame.is_rtr() == false);
+	assert!(frame.data() == &[1, 2, 3]);
+}
+
+#[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+fn disable_loopback() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	assert!(let Ok(()) = socket_a.set_nonblocking(true));
+
+	assert!(let Ok(true) = socket_a.get_loopback());
+	assert!(let Ok(()) = socket_a.set_loopback(false));
+	assert!(let Ok(false) = socket_a.get_loopback());
+
+	assert!(let Ok(()) = socket_a.set_receive_own_messages(true));
+	assert!(let Ok(false) = socket_a.get_loopback());
+	assert!(let Ok(true) = socket_a.get_receive_own_messages());
+
+	// It seems vcan pretends all frames from other sockets are non-local.
+	// So we test by enabling `receive_own_messages` but disabling `loopback` and see if our own message gets dropped as expected.
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
+	let_assert!(Err(e) = socket_a.recv());
+	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
+}
+
+#[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+fn filter_exact_id() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	let_assert!(Ok(socket_b) = CanSocket::bind(interface.name()));
+	assert!(let Ok(()) = socket_a.set_nonblocking(true));
+	assert!(let Ok(()) = socket_b.set_nonblocking(true));
+
+	assert!(let Ok(()) = socket_b.set_filters(&[
+		CanFilter::new(8u8.into()).match_exact_id()
+	]));
+
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(8u8, &[4, 5, 6], None).unwrap()));
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 8);
+	assert!(frame.data() == [4, 5, 6]);
+
+	let_assert!(Err(e) = socket_b.recv());
+	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
+}
+
+#[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+fn filter_exact_id_rtr_only() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	let_assert!(Ok(socket_b) = CanSocket::bind(interface.name()));
+	assert!(let Ok(()) = socket_a.set_nonblocking(true));
+	assert!(let Ok(()) = socket_b.set_nonblocking(true));
+
+	assert!(let Ok(()) = socket_b.set_filters(&[
+		CanFilter::new(8u8.into()).match_exact_id().match_rtr_only(),
+	]));
+
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(1u8, &[1, 2, 3], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(8u8, &[4, 5, 6], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new_rtr(8u8, 8).unwrap()));
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 8);
+	assert!(frame.is_rtr());
+
+	let_assert!(Err(e) = socket_b.recv());
+	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
+}
+
+#[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+fn filter_id_type() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	let_assert!(Ok(socket_b) = CanSocket::bind(interface.name()));
+	assert!(let Ok(()) = socket_a.set_nonblocking(true));
+	assert!(let Ok(()) = socket_b.set_nonblocking(true));
+
+	assert!(let Ok(()) = socket_b.set_filters(&[
+		CanFilter::new_base(0.into()).match_base_extended(),
+	]));
+
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanExtendedId::from(5u8), &[1], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(CanBaseId::from(6), &[2], None).unwrap()));
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 6);
+	assert!(frame.data() == [2]);
+
+	let_assert!(Err(e) = socket_b.recv());
+	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
+}
+
+#[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+fn filter_mask() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	let_assert!(Ok(socket_b) = CanSocket::bind(interface.name()));
+	assert!(let Ok(()) = socket_a.set_nonblocking(true));
+	assert!(let Ok(()) = socket_b.set_nonblocking(true));
+
+	assert!(let Ok(()) = socket_b.set_filters(&[
+		CanFilter::new_extended(0x1200u16.into()).match_id_mask(0xFFFFFF00),
+	]));
+
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1300u16, &[1], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1200u16, &[2], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x12FFu16, &[3], None).unwrap()));
+
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 0x1200);
+	assert!(frame.data() == [2]);
+
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 0x12FF);
+	assert!(frame.data() == [3]);
+
+	let_assert!(Err(e) = socket_b.recv());
+	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
+}
+
+#[test]
+#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+fn multiple_filters() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	let_assert!(Ok(socket_b) = CanSocket::bind(interface.name()));
+	assert!(let Ok(()) = socket_a.set_nonblocking(true));
+	assert!(let Ok(()) = socket_b.set_nonblocking(true));
+
+	assert!(let Ok(()) = socket_b.set_filters(&[
+		CanFilter::new_extended(0x1200u16.into()).match_id_mask(0xFFFFFF00),
+		CanFilter::new_extended(0x2000u16.into()).match_id_mask(0xFFFFFF00),
+	]));
+
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1300u16, &[1], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1200u16, &[2], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x12FFu16, &[3], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x1900u16, &[4], None).unwrap()));
+	assert!(let Ok(()) = socket_a.send(&CanFrame::new(0x2002u16, &[5], None).unwrap()));
+
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 0x1200);
+	assert!(frame.data() == [2]);
+
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 0x12FF);
+	assert!(frame.data() == [3]);
+
+	let_assert!(Ok(frame) = socket_b.recv());
+	assert!(frame.id().as_u32() == 0x2002);
+	assert!(frame.data() == [5]);
+
+	let_assert!(Err(e) = socket_b.recv());
+	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
 }
