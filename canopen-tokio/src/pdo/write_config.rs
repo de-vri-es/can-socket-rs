@@ -123,7 +123,7 @@ pub(crate) async fn write_rpdo_communication_parameters(
 	}
 
 	let cob_id = match params.cob_id {
-		CanId::Base(x) => u32::from(x.as_u16()) | (1 << 31), // Keep bit 31 enabled to so that the PDO is still disabled.
+		CanId::Standard(x) => u32::from(x.as_u16()) | (1 << 31), // Keep bit 31 enabled to so that the PDO is still disabled.
 		CanId::Extended(x) => x.as_u32() | (1 << 29) | (1 << 31), // For extended CAN IDs also enable bit 29.
 	};
 
@@ -165,7 +165,7 @@ pub(crate) async fn write_tpdo_communication_parameters(
 	}
 
 	let cob_id = match params.cob_id {
-		CanId::Base(x) => u32::from(x.as_u16()) | (1 << 31), // Keep bit 31 enabled to so that the PDO is still disabled.
+		CanId::Standard(x) => u32::from(x.as_u16()) | (1 << 31), // Keep bit 31 enabled to so that the PDO is still disabled.
 		CanId::Extended(x) => x.as_u32() | (1 << 29) | (1 << 31), // For extended CAN IDs also enable bit 29.
 	};
 

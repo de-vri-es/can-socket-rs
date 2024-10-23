@@ -1,113 +1,113 @@
 use crate::error::{InvalidId, ParseIdError};
 
-pub const MAX_CAN_ID_BASE: u16 = 0x7FF;
-pub const MAX_CAN_ID_EXTENDED: u32 = 0x1FFF_FFFF;
+pub const MAX_STANDARD_ID: u16 = 0x7FF;
+pub const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
-/// Construct a [`CanId`] (base or extended) that is checked at compile time.
+/// Construct an [`CanId`] (standard or extended) that is checked at compile time.
 ///
 /// You can use any expression that can be evaluated at compile time and results in a `u32`.
 ///
-/// By default, if the value fits in a base CAN ID, a base CAN ID is created.
-/// You can also explicitly ask for a base or extended ID.
+/// By default, if the value fits in a standard CAN ID, a standard CAN ID is created.
+/// You can also explicitly ask for a standard or extended ID.
 ///
 /// Usage:
 /// ```
-/// # use can_socket::{CanId, id};
-/// let id: CanId = id!(0x100 | 0x005);
-/// assert2::let_assert!(CanId::Base(id) = id);
+/// # use can_socket::{CanId, can_id};
+/// let id: CanId = can_id!(0x100 | 0x005);
+/// assert2::let_assert!(CanId::Standard(id) = id);
 /// assert2::assert!(id.as_u16() == 0x105);
 /// ```
 ///
-/// Force construction of a `CanId::Base` (does not compile because the ID only fits as an extended ID):
+/// Force construction of a `CanId::Standard` (does not compile because the ID only fits as an extended ID):
 /// ```compile_fail
-/// # use can_socket::{CanId, id};
-/// let id: CanId = id!(base: 0x10 << 16 | 0x50);
+/// # use can_socket::{CanId, can_id};
+/// let id: CanId = id!(standard: 0x10 << 16 | 0x50);
 /// ```
 ///
 /// Force construction of a `CanId::Extended`:
 /// ```
-/// # use can_socket::{CanId, id};
-/// let id: CanId = id!(extended: 0x100 | 0x005);
+/// # use can_socket::{CanId, can_id};
+/// let id: CanId = can_id!(extended: 0x100 | 0x005);
 /// assert2::let_assert!(CanId::Extended(id) = id);
 /// assert2::assert!(id.as_u32() == 0x105);
 /// ```
 #[macro_export]
-macro_rules! id {
+macro_rules! can_id {
 	($n:expr) => {
 		{
-			#[allow(clippy::all)]
-			const { ::core::assert!(($n) <= $crate::MAX_CAN_ID_EXTENDED, "invalid CAN ID") };
+			const N: u32 = ($n);
+			const { ::core::assert!(N <= $crate::MAX_EXTENDED_ID, "invalid CAN ID") };
 			unsafe {
-				if ($n) as u32 <= $crate::MAX_CAN_ID_BASE as u32 {
-					$crate::CanId::Base($crate::CanBaseId::new_unchecked(($n) as u16))
+				if N <= $crate::MAX_STANDARD_ID as u32 {
+					$crate::CanId::Standard($crate::StandardId::new_unchecked(N as u16))
 				} else {
-					$crate::CanId::Extended($crate::CanExtendedId::new_unchecked($n))
+					$crate::CanId::Extended($crate::ExtendedId::new_unchecked(N))
 				}
 			}
 		}
 	};
-	(base: $n:expr) => {
-		$crate::CanId::Base($crate::base_id!($n))
+	(standard: $n:expr) => {
+		$crate::CanId::Standard($crate::standard_id!($n))
 	};
 	(extended:  $n:expr) => {
 		$crate::CanId::Extended($crate::extended_id!($n))
 	};
 }
 
-/// Construct a [`CanBaseId`] that is checked at compile time.
+/// Construct a [`StandardId`] that is checked at compile time.
 ///
 /// You can use any expression that can be evaluated at compile time and results in a `u16`.
 ///
 /// Usage:
 /// ```
 /// # use assert2::assert;
-/// # use can_socket::{CanBaseId, base_id};
-/// let id: CanBaseId = base_id!(0x100 | 0x005);
+/// # use can_socket::{StandardId, standard_id};
+/// let id: StandardId = standard_id!(0x100 | 0x005);
 /// assert!(id.as_u16() == 0x105);
 /// ```
 ///
 /// Will not accept invalid IDs:
 /// ```compile_fail
-/// # use can_socket::{CanBaseId, base_id};
-/// let id: CanBaseId = base_id!(0x800);
+/// # use can_socket::{StandardId, standard_id};
+/// let id: StandardId = standard_id!(0x800);
 /// ```
 #[macro_export]
-macro_rules! base_id {
+macro_rules! standard_id {
 	($n:expr) => {
 		{
 			#[allow(clippy::all)]
-			const { ::core::assert!(($n) <= $crate::MAX_CAN_ID_BASE, "invalid base CAN ID") };
+			const { ::core::assert!(($n) <= $crate::MAX_STANDARD_ID, "invalid standard CAN ID") };
 			unsafe {
-				$crate::CanBaseId::new_unchecked($n)
+				$crate::StandardId::new_unchecked($n)
 			}
 		}
 	};
 }
 
-/// Construct a [`CanExtendedId`] that is checked at compile time.
+/// Construct a [`ExtendedId`] that is checked at compile time.
 ///
 /// You can use any expression that can be evaluated at compile time and results in a `u32`.
 ///
 /// Usage:
 /// ```
 /// # use assert2::assert;
-/// # use can_socket::{CanExtendedId, extended_id};
-/// let id: CanExtendedId = extended_id!(0x10 << 16 | 0x50);
+/// # use can_socket::{ExtendedId, extended_id};
+/// let id: ExtendedId = extended_id!(0x10 << 16 | 0x50);
 /// assert!(id.as_u32() == 0x10_0050);
 /// ```
 ///
 /// Will not accept invalid IDs:
 /// ```compile_fail
-/// # use can_socket::{CanBaseId, extended_id};
-/// let id: CanExtendedId = extended_id!(0x2000_0000);
+/// # use can_socket::{ExtendedId, extended_id};
+/// let id: ExtendedId = extended_id!(0x2000_0000);
 /// ```
 #[macro_export]
 macro_rules! extended_id {
 	($n:expr) => {
 		unsafe {
 			#[allow(clippy::all)]
-			const { ::core::assert!(($n) <= $crate::MAX_CAN_ID_EXTENDED, "invalid extended CAN ID"); };
-			$crate::CanExtendedId::new_unchecked($n)
+			const { ::core::assert!(($n) <= $crate::MAX_EXTENDED_ID, "invalid extended CAN ID"); };
+			$crate::ExtendedId::new_unchecked($n)
 		}
 	};
 }
@@ -115,44 +115,44 @@ macro_rules! extended_id {
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(C)]
 pub enum CanId {
-	Base(CanBaseId),
-	Extended(CanExtendedId),
+	Standard(StandardId),
+	Extended(ExtendedId),
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(transparent)]
-pub struct CanBaseId {
+pub struct StandardId {
 	id: u16,
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(transparent)]
-pub struct CanExtendedId {
+pub struct ExtendedId {
 	id: u32,
 }
 
 impl CanId {
 	pub const fn new(id: u32) -> Result<Self, InvalidId> {
-		if id <= MAX_CAN_ID_BASE as u32 {
+		if id <= MAX_STANDARD_ID as u32 {
 			let id = id as u16;
-			Ok(Self::Base(CanBaseId { id }))
+			Ok(Self::Standard(StandardId { id }))
 		} else {
-			match CanExtendedId::new(id) {
+			match ExtendedId::new(id) {
 				Ok(x) => Ok(Self::Extended(x)),
 				Err(e) => Err(e)
 			}
 		}
 	}
 
-	pub const fn new_base(id: u16) -> Result<Self, InvalidId> {
-		match CanBaseId::new(id) {
-			Ok(x) => Ok(Self::Base(x)),
+	pub const fn new_standard(id: u16) -> Result<Self, InvalidId> {
+		match StandardId::new(id) {
+			Ok(x) => Ok(Self::Standard(x)),
 			Err(e) => Err(e),
 		}
 	}
 
 	pub const fn new_extended(id: u32) -> Result<Self, InvalidId> {
-		match CanExtendedId::new(id) {
+		match ExtendedId::new(id) {
 			Ok(x) => Ok(Self::Extended(x)),
 			Err(e) => Err(e),
 		}
@@ -162,26 +162,26 @@ impl CanId {
 		self.to_extended().as_u32()
 	}
 
-	pub const fn as_base(self) -> Option<CanBaseId> {
+	pub const fn as_standard(self) -> Option<StandardId> {
 		match self {
-			Self::Base(id) => Some(id),
+			Self::Standard(id) => Some(id),
 			Self::Extended(_) => None,
 		}
 	}
 
-	pub const fn as_extended(self) -> Option<CanExtendedId> {
+	pub const fn as_extended(self) -> Option<ExtendedId> {
 		match self {
-			Self::Base(_) => None,
+			Self::Standard(_) => None,
 			Self::Extended(id) => Some(id),
 		}
 	}
 
-	pub const fn to_base(self) -> Result<CanBaseId, InvalidId> {
+	pub const fn to_standard(self) -> Result<StandardId, InvalidId> {
 		match self {
-			Self::Base(id) => Ok(id),
+			Self::Standard(id) => Ok(id),
 			Self::Extended(id) => {
 				if id.as_u32() <= u16::MAX as u32 {
-					CanBaseId::new(id.as_u32() as u16)
+					StandardId::new(id.as_u32() as u16)
 				} else {
 					Err(InvalidId {
 						id: Some(id.as_u32()),
@@ -192,17 +192,17 @@ impl CanId {
 		}
 	}
 
-	pub const fn to_extended(self) -> CanExtendedId {
+	pub const fn to_extended(self) -> ExtendedId {
 		match self {
-			Self::Base(id) => CanExtendedId::from_u16(id.as_u16()),
+			Self::Standard(id) => ExtendedId::from_u16(id.as_u16()),
 			Self::Extended(id) => id,
 		}
 	}
 }
 
-impl CanBaseId {
+impl StandardId {
 	pub const fn new(id: u16) -> Result<Self, InvalidId> {
-		if id <= MAX_CAN_ID_BASE {
+		if id <= MAX_STANDARD_ID {
 			Ok(Self { id })
 		} else {
 			Err(InvalidId {
@@ -220,21 +220,21 @@ impl CanBaseId {
 		self.id
 	}
 
-	/// Create a new base CAN ID without checking for validity.
+	/// Create a new standard CAN ID without checking for validity.
 	///
 	/// # Safety
-	/// The given ID must be a valid base CAN ID (id <= [`MAX_CAN_ID_BASE`]).
+	/// The given ID must be a valid standard CAN ID (id <= [`MAX_STANDARD_ID`]).
 	pub const unsafe fn new_unchecked(id: u16) -> Self {
-		debug_assert!(id <= MAX_CAN_ID_BASE);
+		debug_assert!(id <= MAX_STANDARD_ID);
 		Self {
 			id
 		}
 	}
 }
 
-impl CanExtendedId {
+impl ExtendedId {
 	pub const fn new(id: u32) -> Result<Self, InvalidId> {
-		if id <= MAX_CAN_ID_EXTENDED {
+		if id <= MAX_EXTENDED_ID {
 			Ok(Self { id })
 		} else {
 			Err(InvalidId {
@@ -259,50 +259,46 @@ impl CanExtendedId {
 	/// Create a new extended CAN ID without checking for validity.
 	///
 	/// # Safety
-	/// The given ID must be a valid extended CAN ID (id <= [`MAX_CAN_ID_EXTENDED`]).
+	/// The given ID must be a valid extended CAN ID (id <= [`MAX_EXTENDED_ID`]).
 	pub const unsafe fn new_unchecked(id: u32) -> Self {
-		debug_assert!(id <= MAX_CAN_ID_EXTENDED);
+		debug_assert!(id <= MAX_EXTENDED_ID);
 		Self {
 			id
 		}
 	}
 }
 
-impl PartialEq<CanBaseId> for CanId {
-	fn eq(&self, other: &CanBaseId) -> bool {
-		self.as_base()
-			.map(|x| x == *other)
-			.unwrap_or(false)
+impl PartialEq<StandardId> for CanId {
+	fn eq(&self, other: &StandardId) -> bool {
+		self.as_standard().is_some_and(|x| x == *other)
 	}
 }
 
-impl PartialEq<CanId> for CanBaseId {
+impl PartialEq<CanId> for StandardId {
 	fn eq(&self, other: &CanId) -> bool {
 		other == self
 	}
 }
 
-impl PartialEq<CanExtendedId> for CanId {
-	fn eq(&self, other: &CanExtendedId) -> bool {
-		self.as_extended()
-			.map(|x| x == *other)
-			.unwrap_or(false)
+impl PartialEq<ExtendedId> for CanId {
+	fn eq(&self, other: &ExtendedId) -> bool {
+		self.as_extended().is_some_and(|x| x == *other)
 	}
 }
 
-impl PartialEq<CanId> for CanExtendedId {
+impl PartialEq<CanId> for ExtendedId {
 	fn eq(&self, other: &CanId) -> bool {
 		other == self
 	}
 }
 
-impl From<u8> for CanBaseId {
+impl From<u8> for StandardId {
 	fn from(value: u8) -> Self {
 		Self { id: value.into() }
 	}
 }
 
-impl TryFrom<u16> for CanBaseId {
+impl TryFrom<u16> for StandardId {
 	type Error = InvalidId;
 
 	fn try_from(value: u16) -> Result<Self, Self::Error> {
@@ -310,11 +306,11 @@ impl TryFrom<u16> for CanBaseId {
 	}
 }
 
-impl TryFrom<u32> for CanBaseId {
+impl TryFrom<u32> for StandardId {
 	type Error = InvalidId;
 
 	fn try_from(value: u32) -> Result<Self, Self::Error> {
-		if value > MAX_CAN_ID_BASE.into() {
+		if value > MAX_STANDARD_ID.into() {
 			Err(InvalidId {
 				id: Some(value),
 				extended: false,
@@ -325,15 +321,15 @@ impl TryFrom<u32> for CanBaseId {
 	}
 }
 
-impl TryFrom<CanExtendedId> for CanBaseId {
+impl TryFrom<ExtendedId> for StandardId {
 	type Error = InvalidId;
 
-	fn try_from(value: CanExtendedId) -> Result<Self, Self::Error> {
+	fn try_from(value: ExtendedId) -> Result<Self, Self::Error> {
 		Self::try_from(value.as_u32())
 	}
 }
 
-impl TryFrom<CanId> for CanBaseId {
+impl TryFrom<CanId> for StandardId {
 	type Error = InvalidId;
 
 	fn try_from(value: CanId) -> Result<Self, Self::Error> {
@@ -341,19 +337,19 @@ impl TryFrom<CanId> for CanBaseId {
 	}
 }
 
-impl From<u8> for CanExtendedId {
+impl From<u8> for ExtendedId {
 	fn from(value: u8) -> Self {
 		Self { id: value.into() }
 	}
 }
 
-impl From<u16> for CanExtendedId {
+impl From<u16> for ExtendedId {
 	fn from(value: u16) -> Self {
 		Self { id: value.into() }
 	}
 }
 
-impl TryFrom<u32> for CanExtendedId {
+impl TryFrom<u32> for ExtendedId {
 	type Error = InvalidId;
 
 	fn try_from(value: u32) -> Result<Self, Self::Error> {
@@ -361,13 +357,13 @@ impl TryFrom<u32> for CanExtendedId {
 	}
 }
 
-impl From<CanBaseId> for CanExtendedId {
-	fn from(value: CanBaseId) -> Self {
+impl From<StandardId> for ExtendedId {
+	fn from(value: StandardId) -> Self {
 		value.as_u16().into()
 	}
 }
 
-impl From<CanId> for CanExtendedId {
+impl From<CanId> for ExtendedId {
 	fn from(value: CanId) -> Self {
 		value.to_extended()
 	}
@@ -375,16 +371,16 @@ impl From<CanId> for CanExtendedId {
 
 impl From<u8> for CanId {
 	fn from(value: u8) -> Self {
-		Self::Base(value.into())
+		Self::Standard(value.into())
 	}
 }
 
 impl From<u16> for CanId {
 	fn from(value: u16) -> Self {
-		if value <= MAX_CAN_ID_BASE {
-			CanBaseId { id: value }.into()
+		if value <= MAX_STANDARD_ID {
+			StandardId { id: value }.into()
 		} else {
-			CanExtendedId::from(value).into()
+			ExtendedId::from(value).into()
 		}
 	}
 }
@@ -397,19 +393,19 @@ impl TryFrom<u32> for CanId {
 	}
 }
 
-impl From<CanBaseId> for CanId {
-	fn from(value: CanBaseId) -> Self {
-		Self::Base(value)
+impl From<StandardId> for CanId {
+	fn from(value: StandardId) -> Self {
+		Self::Standard(value)
 	}
 }
 
-impl From<CanExtendedId> for CanId {
-	fn from(value: CanExtendedId) -> Self {
+impl From<ExtendedId> for CanId {
+	fn from(value: ExtendedId) -> Self {
 		Self::Extended(value)
 	}
 }
 
-impl std::str::FromStr for CanBaseId {
+impl std::str::FromStr for StandardId {
 	type Err = ParseIdError;
 
 	fn from_str(input: &str) -> Result<Self, Self::Err> {
@@ -423,7 +419,7 @@ impl std::str::FromStr for CanBaseId {
 	}
 }
 
-impl std::str::FromStr for CanExtendedId {
+impl std::str::FromStr for ExtendedId {
 	type Err = ParseIdError;
 
 	fn from_str(input: &str) -> Result<Self, Self::Err> {
@@ -462,35 +458,35 @@ fn parse_number(input: &str) -> Result<u32, std::num::ParseIntError> {
 impl std::fmt::Debug for CanId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::Base(id) => id.fmt(f),
+			Self::Standard(id) => id.fmt(f),
 			Self::Extended(id) => id.fmt(f),
 		}
 	}
 }
 
-impl std::fmt::Debug for CanBaseId {
+impl std::fmt::Debug for StandardId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_tuple("CanBaseId")
+		f.debug_tuple("StandardId")
 			.field(&format_args!("0x{:03X}", self.id))
 			.finish()
 	}
 }
 
-impl std::fmt::Debug for CanExtendedId {
+impl std::fmt::Debug for ExtendedId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		f.debug_tuple("CanExtendedId")
+		f.debug_tuple("ExtendedId")
 			.field(&format_args!("0x{:08X}", self.id))
 			.finish()
 	}
 }
 
-impl std::fmt::LowerHex for CanBaseId {
+impl std::fmt::LowerHex for StandardId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		self.as_u16().fmt(f)
 	}
 }
 
-impl std::fmt::LowerHex for CanExtendedId {
+impl std::fmt::LowerHex for ExtendedId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		self.as_u32().fmt(f)
 	}
@@ -499,19 +495,19 @@ impl std::fmt::LowerHex for CanExtendedId {
 impl std::fmt::LowerHex for CanId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::Base(x) => x.fmt(f),
+			Self::Standard(x) => x.fmt(f),
 			Self::Extended(x) => x.fmt(f),
 		}
 	}
 }
 
-impl std::fmt::UpperHex for CanBaseId {
+impl std::fmt::UpperHex for StandardId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		self.as_u16().fmt(f)
 	}
 }
 
-impl std::fmt::UpperHex for CanExtendedId {
+impl std::fmt::UpperHex for ExtendedId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		self.as_u32().fmt(f)
 	}
@@ -520,7 +516,7 @@ impl std::fmt::UpperHex for CanExtendedId {
 impl std::fmt::UpperHex for CanId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			Self::Base(x) => x.fmt(f),
+			Self::Standard(x) => x.fmt(f),
 			Self::Extended(x) => x.fmt(f),
 		}
 	}

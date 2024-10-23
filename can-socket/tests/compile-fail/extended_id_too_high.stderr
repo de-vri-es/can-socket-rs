@@ -1,13 +1,13 @@
 error[E0080]: evaluation of `main::{constant#0}` failed
- --> tests/compile-fail/extended_can_id_too_high.rs:2:12
+ --> tests/compile-fail/extended_id_too_high.rs:2:12
   |
 2 |     let _id = can_socket::extended_id!(0x2000_0000);
-  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the evaluated program panicked at 'invalid extended CAN ID', $DIR/tests/compile-fail/extended_can_id_too_high.rs:2:15
+  |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ the evaluated program panicked at 'invalid extended CAN ID', $DIR/tests/compile-fail/extended_id_too_high.rs:2:15
   |
   = note: this error originates in the macro `$crate::panic::panic_2021` which comes from the expansion of the macro `can_socket::extended_id` (in Nightly builds, run with -Z macro-backtrace for more info)
 
 note: erroneous constant encountered
- --> tests/compile-fail/extended_can_id_too_high.rs:2:12
+ --> tests/compile-fail/extended_id_too_high.rs:2:12
   |
 2 |     let _id = can_socket::extended_id!(0x2000_0000);
   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -152,7 +152,7 @@ impl std::fmt::Debug for CanFrame {
 	}
 }
 
-/// The data payload of a frame.
+/// The data payload of a CAN frame.
 ///
 /// Can hold up to 8 bytes.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
@@ -274,12 +274,13 @@ impl TryFrom<&Box<[u8]>> for CanData {
 mod test {
 	use super::*;
 	use assert2::assert;
+	use crate::can_id;
 
 	#[test]
 	fn can_frame_is_copy() {
 		let frame = CanFrame::new(1u8, [1, 2, 3, 4]);
 		let copy = frame;
-		assert!(copy.id() == CanId::Base(1.into()));
+		assert!(copy.id() == can_id!(1));
 		assert!(copy.data() == &[1, 2, 3, 4]);
 	}
 }

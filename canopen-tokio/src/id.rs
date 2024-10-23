@@ -1,6 +1,6 @@
 //! CANopen extensions for CAN IDs.
 
-use can_socket::CanBaseId;
+use can_socket::StandardId;
 
 /// CANopen extension for [`CanBaseId`].
 ///
@@ -19,7 +19,7 @@ pub trait CanBaseIdExt {
 	fn node_id(&self) -> u8;
 }
 
-impl CanBaseIdExt for CanBaseId {
+impl CanBaseIdExt for StandardId {
 	fn function_code(&self) -> u16 {
 		self.as_u16() & (0x0F << 7)
 	}
