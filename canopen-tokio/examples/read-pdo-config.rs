@@ -72,7 +72,7 @@ fn parse_timeout(input: &str) -> Result<Duration, &'static str> {
 	Ok(Duration::from_secs_f64(seconds))
 }
 
-fn parse_number<T: TryFrom<i128>>(input: &str) -> Result<T, String>
+fn parse_number<T>(input: &str) -> Result<T, String>
 where
 	T: TryFrom<i128>,
 	T::Error: std::fmt::Display,
