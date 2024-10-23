@@ -129,13 +129,13 @@ impl From<TryIntoCanDataError> for TryNewCanFrameError {
 }
 
 #[derive(Debug, Clone)]
-pub struct InvalidDlc {
+pub struct InvalidDataLengthCode {
 	pub(crate) value: u8,
 }
 
-impl std::error::Error for InvalidDlc {}
+impl std::error::Error for InvalidDataLengthCode {}
 
-impl std::fmt::Display for InvalidDlc {
+impl std::fmt::Display for InvalidDataLengthCode {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		write!(f, "invalid data length code: {}, maximum allowed value is 15", self.value)
 	}

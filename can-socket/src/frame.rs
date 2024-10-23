@@ -36,7 +36,7 @@ impl CanFrame {
 		Ok(Self::new(id.try_into()?, data.try_into()?))
 	}
 
-	/// Create a new RTR frame with a data length code of 0.
+	/// Create a new remote tranmission request (RTR) frame with a data length code of 0.
 	///
 	/// To set a different data length code, you can call [`Self::set_data_length_code()`]
 	/// or [`Self::with_data_length_code()`] after constructing the RTR frame.
@@ -100,9 +100,9 @@ impl CanFrame {
 	/// If the data length code is in the range 9 to 15 (inclusive), the actual data length of the frame will be set to 8.
 	/// However, if the CAN controller supports it, it may preserve the given data length code in the frame header.
 	#[inline]
-	pub fn set_data_length_code(&mut self, dlc: u8) -> Result<(), error::InvalidDlc> {
+	pub fn set_data_length_code(&mut self, dlc: u8) -> Result<(), error::InvalidDataLengthCode> {
 		self.inner.set_data_length_code(dlc)
-			.map_err(|()| error::InvalidDlc { value: dlc })
+			.map_err(|()| error::InvalidDataLengthCode { value: dlc })
 	}
 
 	/// Create a copy the frame with a modified data length code.
@@ -118,7 +118,7 @@ impl CanFrame {
 	/// However, if the CAN controller supports it, it may preserve the given data length code in the frame header.
 	#[inline]
 	#[must_use = "this function returns a new frame, it does not modify self"]
-	pub fn with_data_length_code(mut self, dlc: u8) -> Result<Self, error::InvalidDlc> {
+	pub fn with_data_length_code(mut self, dlc: u8) -> Result<Self, error::InvalidDataLengthCode> {
 		self.set_data_length_code(dlc)?;
 		Ok(self)
 	}
