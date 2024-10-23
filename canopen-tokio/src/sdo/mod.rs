@@ -162,26 +162,27 @@ pub enum AbortReason {
 /// Extract the response command from a CAN frame.
 ///
 /// The CAN frame should be an SDO response from an SDO server.
-fn get_server_command(frame: &CanFrame) -> Result<ServerCommand, SdoError> {
-	let data = frame.data();
-	if data.len() < 8 {
-		return Err(MalformedResponse::WrongFrameSize(data.len()).into());
-	}
+fn get_server_command(frame: &CanFrame) -> Result<(ServerCommand, [u8; 8]), SdoError> {
+	let data = frame.data()
+		.ok_or_else(|| SdoError::MalformedResponse(MalformedResponse::WrongFrameSize(0)))?;
+	let data: [u8; 8] = data.as_slice()
+		.try_into()
+		.map_err(|_| MalformedResponse::WrongFrameSize(data.len()))?;
 
 	let command = ServerCommand::try_from(data[0] >> 5)
 		.map_err(|e| MalformedResponse::InvalidServerCommand(e.number))?;
-	Ok(command)
+	Ok((command, data))
 }
 
 /// Check if the response command is the expected one.
 ///
 /// Has special handling for [`ServerCommand::AbortTransfer`] to return a [`TransferAborted`] error.
-fn check_server_command(frame: &CanFrame, expected: ServerCommand) -> Result<(), SdoError> {
-	let command = get_server_command(frame)?;
+fn check_server_command(frame: &CanFrame, expected: ServerCommand) -> Result<[u8; 8], SdoError> {
+	let (command, data) = get_server_command(frame)?;
 	if command == expected {
-		Ok(())
+		Ok(data)
 	} else if command == ServerCommand::AbortTransfer {
-		let reason = u32::from_le_bytes(frame.data()[4..8].try_into().unwrap());
+		let reason = u32::from_le_bytes(data[4..8].try_into().unwrap());
 		let reason = AbortReason::try_from(reason).map_err(|e| e.number);
 		Err(SdoError::TransferAborted(TransferAborted { reason }))
 	} else {

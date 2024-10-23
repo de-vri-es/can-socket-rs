@@ -66,26 +66,10 @@ impl CanFrame {
 
 	/// Get the data of the frame.
 	///
-	/// Always returns an empty slice for RTR frames.
-	/// However, data frames may also return an empty slice if their data length is `0`.
+	/// Returns `None` for RTR frames and `Some(data)` for data frames.
 	#[inline]
-	pub fn data(&self) -> &[u8] {
+	pub fn data(&self) -> Option<CanData> {
 		self.inner.data()
-	}
-
-	/// Get the number of data bytes in the frame.
-	#[inline]
-	pub fn len(&self) -> u8 {
-		self.data().len() as u8
-	}
-
-	/// Check if the frame data is empty.
-	///
-	/// If the frame data is empty, it does not mean it is always a RTR frame.
-	/// Check [`Self::is_rtr()`] to distinguish between an empty data frame and an RTR frame.
-	#[inline]
-	pub fn is_empty(&self) -> bool {
-		self.len() == 0
 	}
 
 	/// Set the data length code of the frame.
@@ -157,8 +141,8 @@ impl std::fmt::Debug for CanFrame {
 /// Can hold up to 8 bytes.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 pub struct CanData {
-	data: [u8; 8],
-	len: u8,
+	pub(crate) data: [u8; 8],
+	pub(crate) len: u8,
 }
 
 impl CanData {
@@ -281,6 +265,6 @@ mod test {
 		let frame = CanFrame::new(1u8, [1, 2, 3, 4]);
 		let copy = frame;
 		assert!(copy.id() == can_id!(1));
-		assert!(copy.data() == &[1, 2, 3, 4]);
+		assert!(copy.data() == Some(CanData::new([1, 2, 3, 4])));
 	}
 }

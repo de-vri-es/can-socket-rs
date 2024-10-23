@@ -228,8 +228,7 @@ fn make_sdo_segment_download_command(
 
 /// Parse an SDO download segment response.
 fn parse_segment_download_response(frame: &CanFrame, expected_toggle: bool) -> Result<(), SdoError> {
-	check_server_command(frame, ServerCommand::SegmentDownload)?;
-	let data = frame.data();
+	let data = check_server_command(frame, ServerCommand::SegmentDownload)?;
 
 	let toggle = data[0] & 0x10 != 0;
 	if toggle != expected_toggle {

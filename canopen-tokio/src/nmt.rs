@@ -123,10 +123,11 @@ pub async fn send_nmt_command(bus: &mut CanOpenSocket, node_id: u8, command: Nmt
 
 /// Parse a heartbeat frame.
 fn parse_heartbeat(frame: &CanFrame) -> Result<NmtState, NmtError> {
-	if frame.data().len() != 1 {
+	let data = frame.data().ok_or_else(|| NmtError::MalformedResponse)?;
+	if data.len() != 1 {
 		Err(NmtError::MalformedResponse)
 	} else {
-		let state = frame.data()[0].try_into()
+		let state = data[0].try_into()
 			.map_err(|_| NmtError::MalformedResponse)?;
 		Ok(state)
 	}

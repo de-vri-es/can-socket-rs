@@ -1,7 +1,7 @@
 use std::path::Path;
 
 use assert2::{assert, let_assert};
-use can_socket::{StandardId, ExtendedId, CanFilter, CanFrame, CanSocket};
+use can_socket::{CanData, CanFilter, CanFrame, CanSocket, ExtendedId, StandardId};
 
 fn random_string(len: usize) -> String {
 	use rand::Rng;
@@ -115,7 +115,7 @@ fn can_talk() {
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 1);
 	assert!(frame.is_rtr() == false);
-	assert!(frame.data() == &[1, 2, 3]);
+	assert!(frame.data() == Some(CanData::new([1, 2, 3])));
 }
 
 #[test]
@@ -160,7 +160,7 @@ fn enable_recv_own_message() {
 	let_assert!(Ok(frame) = socket_a.recv());
 	assert!(frame.id().as_u32() == 1);
 	assert!(frame.is_rtr() == false);
-	assert!(frame.data() == &[1, 2, 3]);
+	assert!(frame.data() == Some(CanData::new([1, 2, 3])));
 }
 
 #[test]
@@ -202,7 +202,7 @@ fn filter_exact_id() {
 	assert!(let Ok(()) = socket_a.send(&CanFrame::new(8u8, [4, 5, 6])));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 8);
-	assert!(frame.data() == [4, 5, 6]);
+	assert!(frame.data() == Some(CanData::new([4, 5, 6])));
 
 	let_assert!(Err(e) = socket_b.recv());
 	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
@@ -249,7 +249,7 @@ fn filter_id_type() {
 	assert!(let Ok(()) = socket_a.send(&CanFrame::new(StandardId::from(6), [2])));
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 6);
-	assert!(frame.data() == [2]);
+	assert!(frame.data() == Some(CanData::new([2])));
 
 	let_assert!(Err(e) = socket_b.recv());
 	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
@@ -274,11 +274,11 @@ fn filter_mask() {
 
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 0x1200);
-	assert!(frame.data() == [2]);
+	assert!(frame.data() == Some(CanData::new([2])));
 
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 0x12FF);
-	assert!(frame.data() == [3]);
+	assert!(frame.data() == Some(CanData::new([3])));
 
 	let_assert!(Err(e) = socket_b.recv());
 	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
@@ -306,15 +306,15 @@ fn multiple_filters() {
 
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 0x1200);
-	assert!(frame.data() == [2]);
+	assert!(frame.data() == Some(CanData::new([2])));
 
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 0x12FF);
-	assert!(frame.data() == [3]);
+	assert!(frame.data() == Some(CanData::new([3])));
 
 	let_assert!(Ok(frame) = socket_b.recv());
 	assert!(frame.id().as_u32() == 0x2002);
-	assert!(frame.data() == [5]);
+	assert!(frame.data() == Some(CanData::new([5])));
 
 	let_assert!(Err(e) = socket_b.recv());
 	assert!(e.kind() == std::io::ErrorKind::WouldBlock);

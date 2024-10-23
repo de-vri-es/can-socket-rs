@@ -1,4 +1,4 @@
-use can_socket::CanFrame;
+use can_socket::{CanData, CanFrame};
 use std::{time::Duration, convert::Infallible};
 
 use crate::{CanOpenSocket, ObjectIndex};
@@ -67,7 +67,7 @@ pub(crate) async fn sdo_upload<Buffer: UploadBuffer>(
 				log::debug!("Received SDO expedited upload response");
 				log::debug!("└─ Data: {data:02X?}");
 				buffer.reserve(data.len())?;
-				buffer.append(data);
+				buffer.append(&data);
 				return Ok(data.len());
 			}
 			InitiateUploadResponse::Segmented(len) => {
@@ -101,7 +101,7 @@ pub(crate) async fn sdo_upload<Buffer: UploadBuffer>(
 					actual: total_len + segment_data.len(),
 				}.into())
 			}
-			buffer.append(segment_data);
+			buffer.append(&segment_data);
 			total_len += segment_data.len();
 
 			if complete {
@@ -164,19 +164,18 @@ fn make_sdo_upload_segment_request(address: SdoAddress, node_id: u8, toggle: boo
 }
 
 /// An SDO initiate upload response.
-enum InitiateUploadResponse<'a> {
+enum InitiateUploadResponse {
 	/// An expedited response containing the actual data.
-	Expedited(&'a [u8]),
+	Expedited(CanData),
 
 	/// A segmented response containing the length of the data.
 	Segmented(u32),
 }
 
-impl<'a> InitiateUploadResponse<'a> {
+impl InitiateUploadResponse {
 	/// Parse an InitiateUploadResponse from a CAN frame.
-	fn parse(frame: &'a CanFrame) -> Result<Self, SdoError> {
-		check_server_command(frame, ServerCommand::InitiateUpload)?;
-		let data = frame.data();
+	fn parse(frame: &CanFrame) -> Result<Self, SdoError> {
+		let data = check_server_command(frame, ServerCommand::InitiateUpload)?;
 
 		let n = data[0] >> 2 & 0x03;
 		let expedited = data[0] & 0x02 != 0;
@@ -187,11 +186,12 @@ impl<'a> InitiateUploadResponse<'a> {
 				true => 4 - n as usize,
 				false => 4,
 			};
-			Ok(InitiateUploadResponse::Expedited(&data[4..][..len]))
+			let data = CanData::try_from(&data[4..][..len]).unwrap();
+			Ok(InitiateUploadResponse::Expedited(data))
 		} else if !size_set {
 			Err(SdoError::NoExpeditedOrSizeFlag)
 		} else {
-			let len = u32::from_le_bytes(frame.data()[4..8].try_into().unwrap());
+			let len = u32::from_le_bytes(data[4..8].try_into().unwrap());
 			Ok(InitiateUploadResponse::Segmented(len))
 		}
 	}
@@ -203,9 +203,8 @@ impl<'a> InitiateUploadResponse<'a> {
 ///
 /// The boolean indicates if the transfer is completed by this frame.
 /// The byte slice holds the data of the frame.
-fn parse_segment_upload_response(frame: &CanFrame, expected_toggle: bool) -> Result<(bool, &[u8]), SdoError> {
-	check_server_command(frame, ServerCommand::SegmentUpload)?;
-	let data = frame.data();
+fn parse_segment_upload_response(frame: &CanFrame, expected_toggle: bool) -> Result<(bool, CanData), SdoError> {
+	let data = check_server_command(frame, ServerCommand::SegmentUpload)?;
 
 	let toggle = data[0] & 0x10 != 0;
 	let n = data[0] >> 1 & 0x07;
@@ -216,7 +215,8 @@ fn parse_segment_upload_response(frame: &CanFrame, expected_toggle: bool) -> Res
 		return Err(SdoError::InvalidToggleFlag);
 	}
 
-	Ok((complete, &data[1..][..len]))
+	let data = CanData::try_from(&data[1..][..len]).unwrap();
+	Ok((complete, data))
 }
 
 impl UploadBuffer for Vec<u8> {
