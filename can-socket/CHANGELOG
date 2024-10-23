@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.1.6 - 2024-10-23
 - [add][minor] Add `get_loopback()`/`set_loopback()`.
 - [add][minor] Add `get_receive_own_messages()`/`set_receive_own_messages()`.
 - [add][minor] Add `CanFilter::test()` function to manually test a frame against a filter.
