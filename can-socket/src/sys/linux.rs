@@ -5,7 +5,7 @@ use std::mem::MaybeUninit;
 use crate::{CanData, CanId, ExtendedId, StandardId};
 
 #[repr(C)]
-#[derive(Copy, Clone, Debug)]
+#[derive(Copy, Clone)]
 #[allow(non_camel_case_types)]
 struct can_frame {
 	pub can_id: u32,
@@ -16,25 +16,24 @@ struct can_frame {
 	pub data: [u8; 8],
 }
 
-#[derive(Debug)]
-pub struct Socket {
+pub(crate) struct Socket {
 	fd: FileDesc,
 }
 
 #[derive(Copy, Clone)]
-pub struct CanFrame {
+pub(crate) struct CanFrame {
 	inner: can_frame
 }
 
 #[repr(transparent)]
-#[derive(Clone, Debug, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct CanInterface {
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
+pub(crate) struct CanInterface {
 	index: u32,
 }
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
-pub struct CanFilter {
+pub(crate) struct CanFilter {
 	filter: libc::can_filter,
 }
 
