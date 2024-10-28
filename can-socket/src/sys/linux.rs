@@ -371,6 +371,38 @@ impl CanFilter {
 		self
 	}
 
+	pub const fn id(self) -> u32 {
+		self.filter.can_id & libc::CAN_EFF_MASK
+	}
+
+	pub const fn id_mask(self) -> u32 {
+		self.filter.can_mask & libc::CAN_EFF_MASK
+	}
+
+	pub const fn matches_rtr_frames(self) -> bool {
+		let rtr_unmasked = self.filter.can_mask & libc::CAN_RTR_FLAG != 0;
+		let is_rtr = self.filter.can_id & libc::CAN_RTR_FLAG != 0;
+		!rtr_unmasked || is_rtr
+	}
+
+	pub const fn matches_data_frames(self) -> bool {
+		let rtr_unmasked = self.filter.can_mask & libc::CAN_RTR_FLAG != 0;
+		let is_rtr = self.filter.can_id & libc::CAN_RTR_FLAG != 0;
+		!rtr_unmasked || !is_rtr
+	}
+
+	pub const fn matches_standard_frames(self) -> bool {
+		let frame_type_unmasked = self.filter.can_mask & libc::CAN_EFF_FLAG != 0;
+		let is_extended = self.filter.can_id & libc::CAN_EFF_FLAG != 0;
+		!frame_type_unmasked || !is_extended
+	}
+
+	pub const fn matches_extended_frames(self) -> bool {
+		let frame_type_unmasked = self.filter.can_mask & libc::CAN_EFF_FLAG != 0;
+		let is_extended = self.filter.can_id & libc::CAN_EFF_FLAG != 0;
+		!frame_type_unmasked || is_extended
+	}
+
 	#[must_use = "returns a new filter, does not modify the existing filter"]
 	pub const fn match_id_mask(mut self, mask: u32) -> Self {
 		self.filter.can_mask |= mask & libc::CAN_EFF_MASK;

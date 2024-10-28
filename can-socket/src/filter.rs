@@ -140,3 +140,17 @@ impl CanFilter {
 		self.filter.test(&frame.inner)
 	}
 }
+
+impl std::fmt::Debug for CanFilter {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		f.debug_struct("CanFilter")
+			.field("id", &format_args!("{:02X}", self.filter.id()))
+			.field("mask", &format_args!("{:02X}", self.filter.id_mask()))
+			.field("extended_frames", &self.filter.matches_extended_frames())
+			.field("standard_frames", &self.filter.matches_standard_frames())
+			.field("data_frames", &self.filter.matches_data_frames())
+			.field("rtr_frames", &self.filter.matches_rtr_frames())
+			.field("inverted", &self.filter.is_inverted())
+			.finish()
+	}
+}
