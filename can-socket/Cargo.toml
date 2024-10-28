@@ -13,7 +13,7 @@ edition = "2021"
 publish = ["crates-io"]
 
 [features]
-ignore-vcan-tests = []
+vcan-tests = []
 tokio = ["dep:tokio"]
 doc = ["tokio", "tokio?/test-util"]
 doc-cfg = []

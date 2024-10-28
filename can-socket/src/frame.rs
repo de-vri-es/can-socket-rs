@@ -75,11 +75,7 @@ impl CanFrame {
 	/// Set the data length code of the frame.
 	///
 	/// If the data length code is higher than the current data length,
-	/// additional bytes become available in `data()`.
-	///
-	/// These additional bytes are initialized to `0` on construction of the frame,
-	/// but they retain their value when reducing and increasing the data length.
-	/// They also carry over to copied frames.
+	/// the extra data bytes that become available will have a value of `0`.
 	///
 	/// If the data length code is in the range 9 to 15 (inclusive), the actual data length of the frame will be set to 8.
 	/// However, if the CAN controller supports it, it may preserve the given data length code in the frame header.
@@ -92,11 +88,7 @@ impl CanFrame {
 	/// Create a copy the frame with a modified data length code.
 	///
 	/// If the data length code is higher than the current data length,
-	/// additional bytes become available in `data()`.
-	///
-	/// These additional bytes are initialized to `0` on construction of the frame,
-	/// but they retain their value when reducing and increasing the data length.
-	/// They also carry over to copied frames.
+	/// the extra data bytes that become available will have a value of `0`.
 	///
 	/// If the data length code is in the range 9 to 15 (inclusive), the actual data length of the frame will be set to 8.
 	/// However, if the CAN controller supports it, it may preserve the given data length code in the frame header.
@@ -192,6 +184,42 @@ impl std::ops::DerefMut for CanData {
 	}
 }
 
+impl std::borrow::Borrow<[u8]> for CanData {
+	fn borrow(&self) -> &[u8] {
+		self.as_slice()
+	}
+}
+
+impl std::borrow::BorrowMut<[u8]> for CanData {
+	fn borrow_mut(&mut self) -> &mut [u8] {
+		self.as_slice_mut()
+	}
+}
+
+impl AsRef<[u8]> for CanData {
+	fn as_ref(&self) -> &[u8] {
+		self.as_slice()
+	}
+}
+
+impl AsMut<[u8]> for CanData {
+	fn as_mut(&mut self) -> &mut [u8] {
+		self.as_slice_mut()
+	}
+}
+
+impl PartialEq<[u8]> for CanData {
+	fn eq(&self, other: &[u8]) -> bool {
+		self.as_slice() == other
+	}
+}
+
+impl PartialEq<CanData> for [u8] {
+	fn eq(&self, other: &CanData) -> bool {
+		self == other.as_slice()
+	}
+}
+
 macro_rules! impl_from_array {
 	($n:literal) => {
 		impl From<[u8; $n]> for CanData {
@@ -202,6 +230,49 @@ macro_rules! impl_from_array {
 					data,
 					len: $n,
 				}
+			}
+		}
+
+		impl<'a> From<&'a [u8; $n]> for CanData {
+			fn from(value: &'a [u8; $n]) -> Self {
+				let mut data = [0; 8];
+				data[..value.len()].copy_from_slice(value);
+				Self {
+					data,
+					len: $n,
+				}
+			}
+		}
+
+		impl TryFrom<CanData> for [u8; $n] {
+			type Error = core::array::TryFromSliceError;
+
+			fn try_from(other: CanData) -> Result<Self, Self::Error> {
+				other.as_slice().try_into()
+			}
+		}
+
+		impl<'a> TryFrom<&'a CanData> for [u8; $n] {
+			type Error = core::array::TryFromSliceError;
+
+			fn try_from(other: &'a CanData) -> Result<Self, Self::Error> {
+				other.as_slice().try_into()
+			}
+		}
+
+		impl PartialEq<[u8; $n]> for CanData {
+			fn eq(&self, other: &[u8; $n]) -> bool {
+				if self.len == $n {
+					&self.data[..$n] == other
+				} else {
+					false
+				}
+			}
+		}
+
+		impl PartialEq<CanData> for [u8; $n] {
+			fn eq(&self, other: &CanData) -> bool {
+				other == self
 			}
 		}
 	}
@@ -266,5 +337,19 @@ mod test {
 		let copy = frame;
 		assert!(copy.id() == can_id!(1));
 		assert!(copy.data() == Some(CanData::new([1, 2, 3, 4])));
+	}
+
+	#[test]
+	fn can_data_from_array() {
+		assert!(CanData::from([1]) == [1]);
+		assert!(CanData::from([1, 2]) == [1, 2]);
+		assert!(CanData::from([1, 2, 3]) == [1, 2, 3]);
+		assert!(CanData::from([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]);
+		assert!(CanData::from([1, 2, 3, 4, 5, 6]) == [1, 2, 3, 4, 5, 6]);
+		assert!(CanData::from([1, 2, 3, 4, 5, 6, 7]) == [1, 2, 3, 4, 5, 6, 7]);
+		assert!(CanData::from([1, 2, 3, 4, 5, 6, 7, 8]) == [1, 2, 3, 4, 5, 6, 7, 8]);
+
+		assert!(CanData::from([1, 2]) != [1]);
+		assert!(CanData::from([1]) != [1, 2]);
 	}
 }

@@ -103,7 +103,7 @@ impl Drop for TempInterface {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn can_talk() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -119,7 +119,7 @@ fn can_talk() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn can_send_rtr() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -134,7 +134,7 @@ fn can_send_rtr() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn local_addr() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -145,7 +145,7 @@ fn local_addr() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn enable_recv_own_message() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -164,7 +164,7 @@ fn enable_recv_own_message() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn disable_loopback() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -186,7 +186,7 @@ fn disable_loopback() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn filter_exact_id() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -209,7 +209,7 @@ fn filter_exact_id() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn filter_exact_id_rtr_only() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -233,7 +233,7 @@ fn filter_exact_id_rtr_only() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn filter_id_type() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -256,7 +256,7 @@ fn filter_id_type() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn filter_mask() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
@@ -285,7 +285,7 @@ fn filter_mask() {
 }
 
 #[test]
-#[cfg_attr(feature = "ignore-vcan-tests", ignore = "ignored because of feature = \"ignore-vcan-tests\"")]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 fn multiple_filters() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));

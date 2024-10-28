@@ -15,8 +15,8 @@ jobs:
     steps:
     - uses: actions/checkout@v4
     - name: Build
-      run: cargo build --workspace --all-targets --features=ignore-vcan-tests
-    - name: Build
-      run: cargo clippy --workspace --all-targets --features=ignore-vcan-tests
-    - name: Run tests
-      run: cargo test --workspace --all-targets --features=ignore-vcan-tests
+      run: cargo build --workspace --all-targets
+    - name: Clippy
+      run: cargo clippy --workspace --all-targets
+    - name: Tests
+      run: cargo test --workspace --all-targets
