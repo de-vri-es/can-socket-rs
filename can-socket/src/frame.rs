@@ -196,6 +196,33 @@ macro_rules! impl_from_array {
 				}
 			}
 		}
+
+		impl<'a> From<&'a [u8; $n]> for CanData {
+			fn from(value: &'a [u8; $n]) -> Self {
+				let mut data = [0; 8];
+				data[..value.len()].copy_from_slice(value);
+				Self {
+					data,
+					len: $n,
+				}
+			}
+		}
+
+		impl TryFrom<CanData> for [u8; $n] {
+			type Error = core::array::TryFromSliceError;
+
+			fn try_from(other: CanData) -> Result<Self, Self::Error> {
+				other.as_slice().try_into()
+			}
+		}
+
+		impl<'a> TryFrom<&'a CanData> for [u8; $n] {
+			type Error = core::array::TryFromSliceError;
+
+			fn try_from(other: &'a CanData) -> Result<Self, Self::Error> {
+				other.as_slice().try_into()
+			}
+		}
 	}
 }
 
