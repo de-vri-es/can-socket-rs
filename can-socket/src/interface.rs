@@ -1,4 +1,4 @@
-/// A CAN interface indentified by index.
+/// A CAN interface identified by its index.
 ///
 /// This type is used as a socket address to bind CAN sockets to a specific interface.
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]

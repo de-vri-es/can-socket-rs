@@ -3,7 +3,7 @@ use crate::error::{InvalidId, ParseIdError};
 /// The highest valid value for a standard CAN ID.
 pub const MAX_STANDARD_ID: u16 = 0x7FF;
 
-/// The highested valid value for an extended CAN ID.
+/// The highest valid value for an extended CAN ID.
 pub const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
 /// Construct an [`CanId`] (standard or extended) that is checked at compile time.

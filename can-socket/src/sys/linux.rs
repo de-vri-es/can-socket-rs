@@ -16,24 +16,24 @@ struct can_frame {
 	pub data: [u8; 8],
 }
 
-pub(crate) struct Socket {
+pub struct Socket {
 	fd: FileDesc,
 }
 
 #[derive(Copy, Clone)]
-pub(crate) struct CanFrame {
+pub struct CanFrame {
 	inner: can_frame
 }
 
 #[repr(transparent)]
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub(crate) struct CanInterface {
+pub struct CanInterface {
 	index: u32,
 }
 
 #[repr(transparent)]
 #[derive(Copy, Clone)]
-pub(crate) struct CanFilter {
+pub struct CanFilter {
 	filter: libc::can_filter,
 }
 

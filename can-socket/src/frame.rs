@@ -36,7 +36,7 @@ impl CanFrame {
 		Ok(Self::new(id.try_into()?, data.try_into()?))
 	}
 
-	/// Create a new remote tranmission request (RTR) frame with a data length code of 0.
+	/// Create a new remote transmission request (RTR) frame with a data length code of 0.
 	///
 	/// To set a different data length code, you can call [`Self::set_data_length_code()`]
 	/// or [`Self::with_data_length_code()`] after constructing the RTR frame.

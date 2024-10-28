@@ -13,8 +13,8 @@ impl std::fmt::Display for InvalidId {
 		match (self.id, self.extended) {
 			(Some(id), false) => write!(f, "invalid standard CAN ID: 0x{:03X}, maximum valid value is 0x7FF", id),
 			(None, false) => write!(f, "invalid standard CAN ID: allowed values are 0 to 0x7FF"),
-			(Some(id), true) => write!(f, "invalid extened CAN ID: 0x{:08X}, maximum valid value is 0x1FFF_FFFF", id),
-			(None, true) => write!(f, "invalid extened CAN ID, allowed values are 0 to 0x1FFF_FFFF"),
+			(Some(id), true) => write!(f, "invalid extended CAN ID: 0x{:08X}, maximum valid value is 0x1FFF_FFFF", id),
+			(None, true) => write!(f, "invalid extended CAN ID, allowed values are 0 to 0x1FFF_FFFF"),
 		}
 	}
 }
