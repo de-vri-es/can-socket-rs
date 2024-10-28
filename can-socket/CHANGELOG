@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.3.0 - 2024-10-28
 - [change][major] Ensure that unused data bytes of a CAN frame are always `0`.
 - [add][minor] Implement conversions from references to fixed size byte arrays up to size 8 to `CanData`.
 - [add][minor] Implement fallible conversions from `CanData` and `&CanData` for fized size byte arrays up to size 8.
