@@ -1,3 +1,6 @@
+# Unreleased
+- [change][major] Ensure that unused data bytes of a CAN frame are always `0`.
+
 # Version 0.2.0 - 2024-10-28
 - [change][major] Refactor `CanFrame` API.
 - [change][major] Rename CAN ID structs and values.

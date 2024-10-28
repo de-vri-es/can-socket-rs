@@ -75,11 +75,7 @@ impl CanFrame {
 	/// Set the data length code of the frame.
 	///
 	/// If the data length code is higher than the current data length,
-	/// additional bytes become available in `data()`.
-	///
-	/// These additional bytes are initialized to `0` on construction of the frame,
-	/// but they retain their value when reducing and increasing the data length.
-	/// They also carry over to copied frames.
+	/// the extra data bytes that become available will have a value of `0`.
 	///
 	/// If the data length code is in the range 9 to 15 (inclusive), the actual data length of the frame will be set to 8.
 	/// However, if the CAN controller supports it, it may preserve the given data length code in the frame header.
@@ -92,11 +88,7 @@ impl CanFrame {
 	/// Create a copy the frame with a modified data length code.
 	///
 	/// If the data length code is higher than the current data length,
-	/// additional bytes become available in `data()`.
-	///
-	/// These additional bytes are initialized to `0` on construction of the frame,
-	/// but they retain their value when reducing and increasing the data length.
-	/// They also carry over to copied frames.
+	/// the extra data bytes that become available will have a value of `0`.
 	///
 	/// If the data length code is in the range 9 to 15 (inclusive), the actual data length of the frame will be set to 8.
 	/// However, if the CAN controller supports it, it may preserve the given data length code in the frame header.

@@ -94,12 +94,15 @@ impl CanFrame {
 		if dlc > 15 {
 			return Err(());
 		}
+
 		self.inner.can_dlc = dlc.clamp(0, 8);
 		if dlc > 8 {
 			self.inner.len8_dlc = dlc;
 		} else {
 			self.inner.len8_dlc = 0;
 		}
+
+		self.inner.data[self.inner.can_dlc as usize..].fill(0);
 		Ok(())
 	}
 
