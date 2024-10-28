@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.2.0 - 2024-10-28
 - [change][major] Refactor `CanFrame` API.
 - [change][major] Rename CAN ID structs and values.
 - [add][minor] Add `id!()`, `base_id!()` and `extended_id!()` macros to construct compile time checked CAN IDs.
