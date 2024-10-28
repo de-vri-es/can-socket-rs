@@ -184,6 +184,42 @@ impl std::ops::DerefMut for CanData {
 	}
 }
 
+impl std::borrow::Borrow<[u8]> for CanData {
+	fn borrow(&self) -> &[u8] {
+		self.as_slice()
+	}
+}
+
+impl std::borrow::BorrowMut<[u8]> for CanData {
+	fn borrow_mut(&mut self) -> &mut [u8] {
+		self.as_slice_mut()
+	}
+}
+
+impl AsRef<[u8]> for CanData {
+	fn as_ref(&self) -> &[u8] {
+		self.as_slice()
+	}
+}
+
+impl AsMut<[u8]> for CanData {
+	fn as_mut(&mut self) -> &mut [u8] {
+		self.as_slice_mut()
+	}
+}
+
+impl PartialEq<[u8]> for CanData {
+	fn eq(&self, other: &[u8]) -> bool {
+		self.as_slice() == other
+	}
+}
+
+impl PartialEq<CanData> for [u8] {
+	fn eq(&self, other: &CanData) -> bool {
+		self == other.as_slice()
+	}
+}
+
 macro_rules! impl_from_array {
 	($n:literal) => {
 		impl From<[u8; $n]> for CanData {
@@ -221,6 +257,22 @@ macro_rules! impl_from_array {
 
 			fn try_from(other: &'a CanData) -> Result<Self, Self::Error> {
 				other.as_slice().try_into()
+			}
+		}
+
+		impl PartialEq<[u8; $n]> for CanData {
+			fn eq(&self, other: &[u8; $n]) -> bool {
+				if self.len == $n {
+					&self.data[..$n] == other
+				} else {
+					false
+				}
+			}
+		}
+
+		impl PartialEq<CanData> for [u8; $n] {
+			fn eq(&self, other: &CanData) -> bool {
+				other == self
 			}
 		}
 	}
@@ -285,5 +337,19 @@ mod test {
 		let copy = frame;
 		assert!(copy.id() == can_id!(1));
 		assert!(copy.data() == Some(CanData::new([1, 2, 3, 4])));
+	}
+
+	#[test]
+	fn can_data_from_array() {
+		assert!(CanData::from([1]) == [1]);
+		assert!(CanData::from([1, 2]) == [1, 2]);
+		assert!(CanData::from([1, 2, 3]) == [1, 2, 3]);
+		assert!(CanData::from([1, 2, 3, 4, 5]) == [1, 2, 3, 4, 5]);
+		assert!(CanData::from([1, 2, 3, 4, 5, 6]) == [1, 2, 3, 4, 5, 6]);
+		assert!(CanData::from([1, 2, 3, 4, 5, 6, 7]) == [1, 2, 3, 4, 5, 6, 7]);
+		assert!(CanData::from([1, 2, 3, 4, 5, 6, 7, 8]) == [1, 2, 3, 4, 5, 6, 7, 8]);
+
+		assert!(CanData::from([1, 2]) != [1]);
+		assert!(CanData::from([1]) != [1, 2]);
 	}
 }

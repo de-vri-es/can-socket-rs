@@ -2,6 +2,9 @@
 - [change][major] Ensure that unused data bytes of a CAN frame are always `0`.
 - [add][minor] Implement conversions from references to fixed size byte arrays up to size 8 to `CanData`.
 - [add][minor] Implement fallible conversions from `CanData` and `&CanData` for fized size byte arrays up to size 8.
+- [add][minor] Allow direct comparison between `CanData` and byte slices.
+- [add][minor] Allow direct comparison between `CanData` and fixed size byte arrays.
+- [add][minor] Implement `AsRef<[u8]>`, `AsMut<[u8]>`, `Borrow<[u8]>` and `BorrowMut<[u8]>` for `CanData`.
 
 # Version 0.2.0 - 2024-10-28
 - [change][major] Refactor `CanFrame` API.
