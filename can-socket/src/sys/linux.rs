@@ -16,18 +16,18 @@ struct can_frame {
 	pub data: [u8; 8],
 }
 
-pub struct Socket {
+pub(crate) struct Socket {
 	fd: FileDesc,
 }
 
 #[derive(Copy, Clone)]
-pub struct CanFrame {
+pub(crate) struct CanFrame {
 	inner: can_frame
 }
 
 #[repr(transparent)]
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
-pub struct CanInterface {
+pub(crate) struct CanInterface {
 	index: u32,
 }
 
