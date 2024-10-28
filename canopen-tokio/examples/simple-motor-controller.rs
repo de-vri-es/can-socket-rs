@@ -209,7 +209,7 @@ async fn do_loop(socket: &mut CanOpenSocket, options: &Options) -> Result<(), ()
 ///   * Send a SYNC command.
 ///   * Receive the feedback PDO.
 async fn do_step(socket: &mut CanOpenSocket, velocity_target: u16, deadline: Instant) -> Result<(), ()> {
-	socket.send_frame(&CanFrame::new(CanId::new(0x201).unwrap(), &velocity_target.to_le_bytes(), None).unwrap())
+	socket.send_frame(&CanFrame::new(CanId::new(0x201).unwrap(), velocity_target.to_le_bytes()))
 		.await
 		.map_err(|e| log::error!("Failed to send PDO 0x201: {e}"))?;
 	socket.send_sync(None)
@@ -234,7 +234,6 @@ struct Status {
 /// Parse a CAN frame as the expected PDO.
 fn parse_pdo(input: &CanFrame) -> Result<Status, ()> {
 	let id = input.id();
-	let data = input.data();
 
 	// Check the CAN ID.
 	if id.as_u32() != 0x181 {
@@ -243,6 +242,9 @@ fn parse_pdo(input: &CanFrame) -> Result<Status, ()> {
 	}
 
 	// Check the data length.
+	let data = input.data()
+		.ok_or_else(|| log::error!("Received an RTR frame, expected a PDO data frame"))?;
+
 	if data.len() != 8 {
 		log::error!("PDO message has wrong length, expected 8 data bytes, got {}", data.len());
 		return Err(());

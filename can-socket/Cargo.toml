@@ -1,18 +1,22 @@
 [package]
 name = "can-socket"
-description = "no frills CAN sockets (blocking or async with tokio)"
+description = "no frills CAN sockets (synchronous or async with tokio)"
 version = "0.1.6"
 license = "BSD-2-Clause"
 keywords = ["CAN", "SocketCAN", "socket", "CANbus", "network"]
 categories = ["os", "hardware-support", "network-programming", "science::robotics"]
-repository = "https://github.com/de-vri-es/can-socket-rs/tree/main/can-socket"
+repository = "https://github.com/de-vri-es/can-socket-rs"
 documentation = "https://docs.rs/can-socket"
+readme = "README.md"
 
 edition = "2021"
 publish = ["crates-io"]
 
 [features]
 ignore-vcan-tests = []
+tokio = ["dep:tokio"]
+doc = ["tokio", "tokio?/test-util"]
+doc-cfg = []
 
 [dependencies]
 filedesc = "0.6.3"
@@ -24,5 +28,8 @@ assert2 = "0.3.14"
 can-socket = { path = ".", features = ["tokio"] }
 clap = { version = "4.4.4", features = ["derive"] }
 rand = "0.8.5"
-tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread", "test-util"] }
 trybuild = { version = "1.0.101", features = ["diff"] }
+
+[package.metadata.docs.rs]
+features = ["doc", "doc-cfg"]

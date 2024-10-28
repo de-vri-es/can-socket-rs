@@ -1,4 +1,4 @@
-use can_socket::CanBaseId;
+use can_socket::StandardId;
 
 /// The address pair to use for SDO transfers.
 #[derive(Debug, Copy, Clone)]
@@ -16,8 +16,8 @@ impl SdoAddress {
 	/// Note that download means "download to server" and upload means "upload from server".
 	/// Most people outside of [CiA](https://can-cia.org/) would have chosen the opposite meaning.
 	pub fn new(command_address: u16, response_address: u16) -> Result<Self, can_socket::error::InvalidId> {
-		CanBaseId::new(command_address)?;
-		CanBaseId::new(response_address)?;
+		StandardId::new(command_address)?;
+		StandardId::new(response_address)?;
 		Ok(Self {
 			command_address,
 			response_address,
@@ -33,13 +33,13 @@ impl SdoAddress {
 	}
 
 	/// Get the full CAN ID for a sending SDO commands to a given node ID.
-	pub fn command_id(self, node_id: u8) -> CanBaseId {
-		CanBaseId::new(self.command_address | u16::from(node_id)).unwrap()
+	pub fn command_id(self, node_id: u8) -> StandardId {
+		StandardId::new(self.command_address | u16::from(node_id)).unwrap()
 	}
 
 	/// Get the full CAN ID for receiving SDO responses from a given node ID.
-	pub fn response_id(self, node_id: u8) -> CanBaseId {
-		CanBaseId::new(self.response_address | u16::from(node_id)).unwrap()
+	pub fn response_id(self, node_id: u8) -> StandardId {
+		StandardId::new(self.response_address | u16::from(node_id)).unwrap()
 	}
 
 	/// Get the COB ID (excluding the node ID) to use for sending the SDO commands.

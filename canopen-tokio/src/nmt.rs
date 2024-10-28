@@ -3,15 +3,15 @@
 use num_enum::{IntoPrimitive, TryFromPrimitive};
 use std::time::Duration;
 
-use can_socket::{CanFrame, CanBaseId};
+use can_socket::{CanFrame, StandardId};
 use crate::CanOpenSocket;
 
 const NMT_COB_ID: u8 = 0x000;
 
 const FUNCTION_HEARTBEAT: u16 = 0x700;
 
-fn heartbeat_id(node_id: u8) -> CanBaseId {
-	CanBaseId::new(FUNCTION_HEARTBEAT | u16::from(node_id)).unwrap()
+fn heartbeat_id(node_id: u8) -> StandardId {
+	StandardId::new(FUNCTION_HEARTBEAT | u16::from(node_id)).unwrap()
 }
 
 
@@ -101,9 +101,8 @@ pub async fn send_nmt_command(bus: &mut CanOpenSocket, node_id: u8, command: Nmt
 	log::debug!("Sending NMT command {command:?} to node 0x{node_id:02X} (timeout {timeout:?})");
 	let command_frame = CanFrame::new(
 		NMT_COB_ID,
-		&[command as u8, node_id],
-		None,
-	).unwrap();
+		[command as u8, node_id],
+	);
 	bus.socket.send(&command_frame)
 		.await
 		.map_err(NmtError::SendFailed)?;
@@ -124,10 +123,11 @@ pub async fn send_nmt_command(bus: &mut CanOpenSocket, node_id: u8, command: Nmt
 
 /// Parse a heartbeat frame.
 fn parse_heartbeat(frame: &CanFrame) -> Result<NmtState, NmtError> {
-	if frame.data().len() != 1 {
+	let data = frame.data().ok_or_else(|| NmtError::MalformedResponse)?;
+	if data.len() != 1 {
 		Err(NmtError::MalformedResponse)
 	} else {
-		let state = frame.data()[0].try_into()
+		let state = data[0].try_into()
 			.map_err(|_| NmtError::MalformedResponse)?;
 		Ok(state)
 	}

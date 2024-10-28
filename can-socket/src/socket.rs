@@ -1,5 +1,11 @@
 use crate::{CanFilter, CanFrame, CanInterface};
 
+/// A synchronous CAN socket.
+///
+/// Used to send and receive [`CanFrame`]'s over the network.
+///
+/// Although the socket is synchronous,
+/// it can be put into non-blocking mode with [`Self::set_nonblocking()`].
 #[repr(transparent)]
 pub struct CanSocket {
 	inner: crate::sys::Socket,
@@ -64,7 +70,7 @@ impl CanSocket {
 	/// Send a frame over the socket.
 	///
 	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
-	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
+	/// It does not mean the frame has been successfully transmitted over the CAN bus.
 	pub fn send(&self, frame: &CanFrame) -> std::io::Result<()> {
 		self.inner.send(&frame.inner)
 	}
@@ -72,7 +78,7 @@ impl CanSocket {
 	/// Send a frame over a particular interface.
 	///
 	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
-	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
+	/// It does not mean the frame has been successfully transmitted over the CAN bus.
 	pub fn send_to(&self, frame: &CanFrame, interface: &CanInterface) -> std::io::Result<()> {
 		self.inner.send_to(&frame.inner, &interface.inner)
 	}
