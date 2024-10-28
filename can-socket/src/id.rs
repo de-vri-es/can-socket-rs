@@ -1,6 +1,9 @@
 use crate::error::{InvalidId, ParseIdError};
 
+/// The highest valid value for a standard CAN ID.
 pub const MAX_STANDARD_ID: u16 = 0x7FF;
+
+/// The highested valid value for an extended CAN ID.
 pub const MAX_EXTENDED_ID: u32 = 0x1FFF_FFFF;
 
 /// Construct an [`CanId`] (standard or extended) that is checked at compile time.
@@ -84,7 +87,7 @@ macro_rules! standard_id {
 	};
 }
 
-/// Construct a [`ExtendedId`] that is checked at compile time.
+/// Construct an [`ExtendedId`] that is checked at compile time.
 ///
 /// You can use any expression that can be evaluated at compile time and results in a `u32`.
 ///
@@ -112,26 +115,44 @@ macro_rules! extended_id {
 	};
 }
 
+/// A CAN ID, either standard (11 bit) or extended (29 bits).
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(C)]
 pub enum CanId {
+	/// A standard 11 bit CAN ID.
 	Standard(StandardId),
+
+	/// An extended 29 bit CAN ID.
 	Extended(ExtendedId),
 }
 
+/// A standard 11 bit CAN ID.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct StandardId {
+	/// The raw ID.
 	id: u16,
 }
 
+/// An extended 29 bit CAN ID.
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
 #[repr(transparent)]
 pub struct ExtendedId {
+	/// The raw ID.
 	id: u32,
 }
 
 impl CanId {
+	/// Create a new CAN ID from a raw value.
+	///
+	/// If the value fits in a 11 bit standard CAN ID,
+	/// this function will return [`Self::Standard`].
+	/// a standard ID will be created.
+	///
+	/// Otherwise, if the value fits in a 29 bits extended CAN ID,
+	/// this function returns [`Self::Extended`].
+	///
+	/// If the value doesn't fit in either, this function returns an error.
 	pub const fn new(id: u32) -> Result<Self, InvalidId> {
 		if id <= MAX_STANDARD_ID as u32 {
 			let id = id as u16;
@@ -144,6 +165,10 @@ impl CanId {
 		}
 	}
 
+	/// Create a new standard CAN ID from a raw value.
+	///
+	/// If the value doesn't fit in a standard 11 bit CAN ID,
+	/// this function returns an error.
 	pub const fn new_standard(id: u16) -> Result<Self, InvalidId> {
 		match StandardId::new(id) {
 			Ok(x) => Ok(Self::Standard(x)),
@@ -151,6 +176,10 @@ impl CanId {
 		}
 	}
 
+	/// Create a new extended CAN ID from a raw value.
+	///
+	/// If the value doesn't fit in an extended 29 bit CAN ID,
+	/// this function returns an error.
 	pub const fn new_extended(id: u32) -> Result<Self, InvalidId> {
 		match ExtendedId::new(id) {
 			Ok(x) => Ok(Self::Extended(x)),
@@ -158,10 +187,17 @@ impl CanId {
 		}
 	}
 
+	/// Get the raw value as a `u32`.
 	pub const fn as_u32(self) -> u32 {
 		self.to_extended().as_u32()
 	}
 
+	/// Get `self` as a `StandardId`, or `None` if this is an extended ID.
+	///
+	/// Note: This function always returns `None` if `self` is an extended ID.
+	/// It doesn't matter if the value would have fit in a [`StandardId`].
+	///
+	/// Use [`Self::to_standard()`] if you want to try to convert extended IDs to standard IDs.
 	pub const fn as_standard(self) -> Option<StandardId> {
 		match self {
 			Self::Standard(id) => Some(id),
@@ -169,6 +205,9 @@ impl CanId {
 		}
 	}
 
+	/// Get `self` as an `ExtendedId`, or `None` if this is a standard ID.
+	///
+	/// Use [`Self::to_extended()`] if you want to convert standard IDs to extended IDs.
 	pub const fn as_extended(self) -> Option<ExtendedId> {
 		match self {
 			Self::Standard(_) => None,
@@ -176,6 +215,9 @@ impl CanId {
 		}
 	}
 
+	/// Try to convert the ID to a standard ID.
+	///
+	/// Returns an error if the value doesn't fit in a standard ID.
 	pub const fn to_standard(self) -> Result<StandardId, InvalidId> {
 		match self {
 			Self::Standard(id) => Ok(id),
@@ -192,6 +234,7 @@ impl CanId {
 		}
 	}
 
+	/// Convert the ID to an extended ID.
 	pub const fn to_extended(self) -> ExtendedId {
 		match self {
 			Self::Standard(id) => ExtendedId::from_u16(id.as_u16()),
@@ -201,6 +244,12 @@ impl CanId {
 }
 
 impl StandardId {
+	/// The maximum valid standard ID.
+	pub const MAX: Self = Self { id: MAX_STANDARD_ID };
+
+	/// Try to create a new standard ID from a raw value.
+	///
+	/// Returns an error if the value doesn't fit in 11 bits.
 	pub const fn new(id: u16) -> Result<Self, InvalidId> {
 		if id <= MAX_STANDARD_ID {
 			Ok(Self { id })
@@ -212,10 +261,18 @@ impl StandardId {
 		}
 	}
 
+	/// Create a new standard ID from a `u8`.
+	///
+	/// Note that [`StandardId`] also implements `From<u8>`.
+	/// However, this function is usable in `const` context.
 	pub const fn from_u8(id: u8) -> Self {
 		Self { id: id as u16 }
 	}
 
+	/// Get the raw value as a `u16`.
+	///
+	/// Note that [`StandardId`] also implements `Into<u16>`.
+	/// However, this function is usable in `const` context.
 	pub const fn as_u16(self) -> u16 {
 		self.id
 	}
@@ -233,6 +290,12 @@ impl StandardId {
 }
 
 impl ExtendedId {
+	/// The maximum valid extended ID.
+	pub const MAX: Self = Self { id: MAX_EXTENDED_ID };
+
+	/// Try to create a new extended ID from a raw value.
+	///
+	/// Returns an error if the value doesn't fit in 29 bits.
 	pub const fn new(id: u32) -> Result<Self, InvalidId> {
 		if id <= MAX_EXTENDED_ID {
 			Ok(Self { id })
@@ -244,14 +307,26 @@ impl ExtendedId {
 		}
 	}
 
+	/// Create a new extended ID from a `u8`.
+	///
+	/// Note that [`ExtendedId`] also implements `From<u8>`.
+	/// However, this function is usable in `const` context.
 	pub const fn from_u8(id: u8) -> Self {
 		Self { id: id as u32 }
 	}
 
+	/// Create a new extended ID from a `u16`.
+	///
+	/// Note that [`ExtendedId`] also implements `From<u16>`.
+	/// However, this function is usable in `const` context.
 	pub const fn from_u16(id: u16) -> Self {
 		Self { id: id as u32 }
 	}
 
+	/// Get the raw value as a `u32`.
+	///
+	/// Note that [`ExtendedId`] also implements `Into<u32>`.
+	/// However, this function is usable in `const` context.
 	pub const fn as_u32(self) -> u32 {
 		self.id
 	}

@@ -1,5 +1,11 @@
 use crate::{CanFilter, CanFrame, CanInterface};
 
+/// A synchronous CAN socket.
+///
+/// Used to send and receive [`CanFrame`]'s over the network.
+///
+/// Although the socket is synchronous,
+/// it can be put into non-blocking mode with [`Self::set_nonblocking()`].
 #[repr(transparent)]
 pub struct CanSocket {
 	inner: crate::sys::Socket,

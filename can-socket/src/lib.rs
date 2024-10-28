@@ -1,5 +1,7 @@
 #![cfg_attr(feature = "doc-cfg", feature(doc_cfg))]
 
+#[warn(missing_docs)]
+
 pub mod error;
 
 #[cfg(feature = "tokio")]

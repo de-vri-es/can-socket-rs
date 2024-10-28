@@ -6,6 +6,7 @@ use crate::CanFrame;
 use crate::CanInterface;
 use crate::Deadline;
 
+/// An asynchronous CAN socket for `tokio`.
 pub struct CanSocket {
 	io: AsyncFd<sys::Socket>,
 }

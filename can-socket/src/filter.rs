@@ -1,5 +1,9 @@
 use crate::{sys, StandardId, ExtendedId, CanFrame, CanId};
 
+/// A CAN filter.
+///
+/// Can be used to have the kernel filter incoming frames before they are delivered to userspace,
+/// to avoid uncessecarily waking up in userspace.
 #[repr(transparent)]
 #[derive(Copy, Clone)]
 pub struct CanFilter {

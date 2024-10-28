@@ -1,3 +1,6 @@
+//! Error types.
+
+/// The ID was invalid.
 #[derive(Debug, Clone)]
 pub struct InvalidId {
 	pub(crate) id: Option<u32>,
@@ -16,6 +19,7 @@ impl std::fmt::Display for InvalidId {
 	}
 }
 
+/// Failed to parse the ID.
 #[derive(Clone)]
 pub struct ParseIdError {
 	inner: ParseIdErrorInner,
@@ -59,6 +63,7 @@ impl std::fmt::Debug for ParseIdError {
 	}
 }
 
+/// The data does not fit in a CAN data frame.
 #[derive(Clone, Debug)]
 pub struct TryIntoCanDataError {
 	pub(crate) len: usize,
@@ -78,6 +83,7 @@ impl From<TryIntoCanDataError> for std::io::Error {
 	}
 }
 
+/// The data or ID used to construct a CAN frame was out of bounds.
 #[derive(Clone)]
 pub struct TryNewCanFrameError {
 	inner: TryNewCanFrameErrorInner,
@@ -128,6 +134,7 @@ impl From<TryIntoCanDataError> for TryNewCanFrameError {
 	}
 }
 
+/// The data length code is too large (maximum possible value is 15).
 #[derive(Debug, Clone)]
 pub struct InvalidDataLengthCode {
 	pub(crate) value: u8,
