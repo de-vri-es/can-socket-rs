@@ -133,6 +133,30 @@ async fn can_send_rtr() {
 
 #[tokio::test]
 #[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
+async fn can_try_send_try_recv() {
+	let_assert!(Ok(interface) = TempInterface::new());
+	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
+	let_assert!(Ok(socket_b) = CanSocket::bind(interface.name()));
+
+	// We seem to have to yield to tokio atleast once before our socket registers as writable.
+	tokio::time::sleep(Duration::from_micros(1)).await;
+
+	assert!(let Ok(()) = socket_a.try_send(&CanFrame::new(1u8, [1, 2, 3])));
+
+	// We seem to have to yield to tokio atleast once before our socket registers as readable.
+	tokio::time::sleep(Duration::from_micros(1)).await;
+
+	let_assert!(Ok(frame) = socket_b.try_recv());
+	assert!(frame.id().as_u32() == 1);
+	assert!(frame.is_rtr() == false);
+	assert!(frame.data() == Some(CanData::new([1, 2, 3])));
+
+	let_assert!(Err(e) = socket_b.try_recv());
+	assert!(e.kind() == std::io::ErrorKind::WouldBlock);
+}
+
+#[tokio::test]
+#[cfg_attr(not(feature = "vcan-tests"), ignore = "enable the \"vcan-tests\" feature to enable this test")]
 async fn local_addr() {
 	let_assert!(Ok(interface) = TempInterface::new());
 	let_assert!(Ok(socket_a) = CanSocket::bind(interface.name()));
