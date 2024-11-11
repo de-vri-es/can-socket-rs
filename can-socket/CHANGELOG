@@ -1,3 +1,9 @@
+# Unreleased
+- [add][minor] Add `tokio::CanSocket::try_send()`.
+- [add][minor] Add `tokio::CanSocket::try_send_to()`.
+- [add][minor] Add `tokio::CanSocket::try_recv()`.
+- [add][minor] Add `tokio::CanSocket::try_recv_from()`.
+
 # Version 0.3.0 - 2024-10-28
 - [change][major] Ensure that unused data bytes of a CAN frame are always `0`.
 - [add][minor] Implement conversions from references to fixed size byte arrays up to size 8 to `CanData`.
