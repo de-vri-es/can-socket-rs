@@ -15,6 +15,7 @@ pub use id::CanBaseIdExt;
 pub mod nmt;
 pub mod pdo;
 pub mod sdo;
+pub mod dictionary;
 
 /// A CANopen socket.
 ///

@@ -12,6 +12,7 @@ edition = "2021"
 
 [dependencies]
 can-socket = { version = "0.3.0", path = "../can-socket", features = ["tokio"] }
+ini_core = "0.2.0"
 log = "0.4.20"
 num_enum = "0.7.0"
 thiserror = "1.0.49"
