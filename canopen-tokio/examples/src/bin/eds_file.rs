@@ -1,7 +1,4 @@
-use std::time::Duration;
-
-use can_socket::tokio::CanSocket;
-use canopen_tokio::{dictionary, nmt::NmtCommand, CanOpenSocket};
+use canopen_tokio::dictionary;
 
 fn main() {
     env_logger::builder()
@@ -1716,6 +1713,7 @@ ObjFlags=0x0
 
 [2026]
 ParameterName=Temperature object
+ObjectType=0x09
 SubNumber=3
 
 [2026sub0]

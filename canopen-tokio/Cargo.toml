@@ -22,3 +22,8 @@ tokio = { version = "1.32.0", features = ["time"] }
 clap = { version = "4.4.4", features = ["derive"] }
 env_logger = "0.10.0"
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+
+
+[features]
+default = ["fs"]
+fs = ["tokio/fs"]

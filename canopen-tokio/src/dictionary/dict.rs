@@ -17,7 +17,6 @@ const OBJECT_TYPE_RECORD: u32 = 9;
 pub type SubIndex = u8;
 pub type Properties = HashMap<String, String>;
 
-
 #[derive(Clone, Debug)]
 pub struct ObjectDirectory {
     pub node_id: u8,
@@ -26,6 +25,16 @@ pub struct ObjectDirectory {
 }
 
 impl ObjectDirectory {
+    #[cfg(feature = "fs")]
+    pub async fn load_from_file<PATH: AsRef<std::path::Path>>(
+        node_id: u8,
+        file: PATH,
+    ) -> Result<Self, LoadError> {
+        let content = tokio::fs::read_to_string(file).await?;
+
+        Self::load_from_content(node_id, &content)
+    }
+
     pub fn load_from_content(
         node_id: u8,
         content: &str,
