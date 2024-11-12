@@ -5,10 +5,6 @@ pub struct Value {
     data: Vec<u8>,
 }
 
-pub fn make_error(kidn: DataType, data_string: &str) -> () {
-    ()
-}
-
 impl Value {
     pub fn from_bytes(data: &[u8]) -> Self {
         Self {
@@ -16,83 +12,87 @@ impl Value {
         }
     }
 
-    pub fn from_str(data_string: &str, kind: DataType) -> Result<Value, ()> {
+    pub fn from_str(raw_value: &str, kind: DataType) -> Result<Value, String> {
         match kind {
-            DataType::Unknown => Err(make_error(kind, data_string)),
+            DataType::Unknown => Err("Unknown data type!".into()),
 
             DataType::Boolean => {
-                let val: u8 = match data_string.to_lowercase().as_str() {
-                    "true" | "1" => 1,
-                    "false" | "0" => 0,
-                    _ => return Err(make_error(kind, data_string)),
+                let val = match raw_value.to_lowercase().as_str() {
+                    "true" | "1" => 1u8,
+                    "false" | "0" => 0u8,
+                    _ => return Err("Invalid bool value".into()),
                 };
+
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Integer8 => {
-                let val: i8 = parse_number(data_string);
+                let val: i8 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Integer16 => {
-                let val: i16 = parse_number(data_string);
+                let val: i16 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Integer32 => {
-                let val: i32 = parse_number(data_string);
+                let val: i32 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Integer64 => {
-                let val: i64 = parse_number(data_string);
+                let val: i64 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Unsigned8 => {
-                let val: u8 = parse_number(&data_string);
+                let val: u8 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Unsigned16 => {
-                let val: u16 = parse_number(data_string);
+                let val: u16 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Unsigned32 => {
-                let val: u32 = parse_number(data_string);
+                let val: u32 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Unsigned64 => {
-                let val: u64 = parse_number(data_string);
+                let val: u64 = parse_number(raw_value);
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Real32 => {
-                let val: f32 = data_string
-                    .parse()
-                    .map_err(|_| make_error(*kind, data_string))?;
+                let Ok(val) = raw_value.parse::<f32>() else {
+                    return Err("Failed to parse f32".into());
+                };
+
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::Real64 => {
-                let val: f64 = data_string
-                    .parse()
-                    .map_err(|_| make_error(*kind, data_string))?;
+                let Ok(val) = raw_value.parse::<f64>() else {
+                    return Err("Failed to parse f64".into());
+                };
+
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
 
             DataType::VisibleString
             | DataType::OctetString
             | DataType::UnicodeString => Ok(Value {
-                data: data_string.as_bytes().to_vec(),
+                data: raw_value.as_bytes().to_vec(),
             }),
 
             DataType::Domain => {
-                let val: i32 = data_string
-                    .parse()
-                    .map_err(|_| make_error(*kind, data_string))?;
+                let Ok(val) = raw_value.parse::<i32>() else {
+                    return Err("Failed to parse domain id".into());
+                };
+
                 Ok(Value::from_bytes(&val.to_le_bytes()))
             }
         }
@@ -102,6 +102,7 @@ impl Value {
         self.data = data;
     }
 
+    #[allow(unused)]
     fn as_slice(&self) -> &[u8] {
         &self.data
     }

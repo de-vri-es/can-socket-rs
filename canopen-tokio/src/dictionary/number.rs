@@ -49,9 +49,15 @@ impl_parse_radix_for!(u32);
 impl_parse_radix_for!(u64);
 
 pub fn parse_number<T: ParseRadix + Default>(s: &str) -> T {
-    if s.starts_with("0x") || s.starts_with("0X") {
-        T::from_str_radix(&s[2..], 16).unwrap_or_default()
+    let maybe_number = if s.starts_with("0x") || s.starts_with("0X") {
+        T::from_str_radix(&s[2..], 16)
     } else {
-        s.parse().unwrap_or_default()
-    }
+        s.parse()
+    };
+
+    maybe_number
+        .inspect_err(|_cause| {
+            log::warn!("Failed to parse number. Rollback to default value",)
+        })
+        .unwrap_or_default()
 }

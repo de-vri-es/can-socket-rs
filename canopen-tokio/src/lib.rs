@@ -1,6 +1,6 @@
 //! CANopen implementation for [`tokio`].
 
-#![warn(missing_docs)]
+// #![warn(missing_docs)]
 #![warn(missing_debug_implementations)]
 
 use can_socket::tokio::CanSocket;

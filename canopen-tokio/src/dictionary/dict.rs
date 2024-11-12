@@ -17,6 +17,7 @@ const OBJECT_TYPE_RECORD: u32 = 9;
 pub type SubIndex = u8;
 pub type Properties = HashMap<String, String>;
 
+
 #[derive(Clone, Debug)]
 pub struct ObjectDirectory {
     pub node_id: u8,

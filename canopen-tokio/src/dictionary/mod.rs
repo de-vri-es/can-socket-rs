@@ -18,6 +18,7 @@ pub use variable::*;
 pub use array::*;
 pub use error::*;
 pub use object::*;
+pub use dict::*;
 
 // TODO(zephyr): Split the logic to read EDS and object_directory. Tasks:
 //   - Make Array fixed, and provide real get_variable() / get_mut_variable().

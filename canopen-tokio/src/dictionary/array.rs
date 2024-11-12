@@ -26,7 +26,7 @@ impl Array {
             index,
             storage_location,
             index_to_variable: HashMap::new(),
-            name_to_index: HashMap::new()
+            name_to_index: HashMap::new(),
         }
     }
     pub fn push(&mut self, var: Variable) {
@@ -35,29 +35,28 @@ impl Array {
     }
 
     pub fn get(&self, sub_index: SubIndex) -> Option<&Variable> {
-        todo!()
+        self.index_to_variable.get(&sub_index)
     }
 
-    pub fn get_mut<'a>(
-        &'a mut self,
-        sub_index: SubIndex,
-    ) -> Option<&'a mut Variable> {
-        if let Some(ref value) = self.index_to_variable.get_mut(&sub_index) {
-            return Some(value);
-        }
-
-        //compiler will optimize
-        if sub_index > 0 && sub_index < 0xFF {
+    pub fn get_mut(&mut self, sub_index: SubIndex) -> Option<&mut Variable> {
+        if self.index_to_variable.contains_key(&sub_index) {
+            self.index_to_variable.get_mut(&sub_index)
+        } else if sub_index > 0 && sub_index < 0xFF {
             // TODO(zephyr): copy from python impl, which doesn't follow the spec very well.
             // Please read <CANopen CiA 306> section 4.5.2.4 for details.
-            let base_var = self.index_to_variable.get(&1)?;
-            let new_var = Variable {
-                name: format!("{}_{}", self.name, sub_index),
-                sub_index,
-                ..base_var.clone()
+            let var = {
+                let base_var = self.index_to_variable.get(&1).cloned()?;
+                Variable {
+                    name: format!("{}_{}", self.name, sub_index),
+                    sub_index,
+                    ..base_var
+                }
             };
 
-            self.push(new_var);
+            self.name_to_index.insert(var.name.clone(), var.sub_index);
+
+            let _ = self.index_to_variable.insert(var.sub_index, var);
+
             self.index_to_variable.get_mut(&sub_index)
         } else {
             None
