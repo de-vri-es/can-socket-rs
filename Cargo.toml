@@ -3,6 +3,7 @@ resolver = "2"
 members = [
 	"can-socket",
 	"canopen-tokio",
+	"canopen-tokio/examples"
 ]
 
 [patch.crates-io]

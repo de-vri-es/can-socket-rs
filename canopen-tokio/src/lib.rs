@@ -257,7 +257,10 @@ impl CanOpenSocket {
 impl ObjectIndex {
 	/// Create a new object index from a main index and a subindex.
 	pub fn new(index: u16, subindex: u8) -> Self {
-		Self { index, subindex }
+		Self {
+			index, 
+			subindex
+		}
 	}
 }
 
