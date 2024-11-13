@@ -35,10 +35,7 @@ impl ObjectDirectory {
         Self::load_from_content(node_id, &content)
     }
 
-    pub fn load_from_content(
-        node_id: u8,
-        content: &str,
-    ) -> Result<Self, LoadError> {
+    pub fn load_from_content(node_id: u8, content: &str) -> Result<Self, LoadError> {
         let mut dict = ObjectDirectory {
             node_id,
             index_to_object: HashMap::new(),
@@ -53,10 +50,7 @@ impl ObjectDirectory {
                 ini::Item::Section(name) => {
                     if let Some(section_name) = current_section_name.take() {
                         // Get all properties, process the section.
-                        dict.process_section(
-                            &section_name,
-                            &current_properties,
-                        )?;
+                        dict.process_section(&section_name, &current_properties)?;
                         current_properties.clear();
                     }
                     current_section_name = Some(String::from(name));
@@ -88,11 +82,7 @@ impl ObjectDirectory {
         self.name_to_index.insert(name, index);
     }
 
-    pub fn push_by_sub_index(
-        &mut self,
-        index: u16,
-        var: Variable,
-    ) -> Result<(), String> {
+    pub fn push_by_sub_index(&mut self, index: u16, var: Variable) -> Result<(), String> {
         match self.index_to_object.get_mut(&index) {
             None => Err(format!("No id:{:x?}", index)),
 
@@ -116,10 +106,7 @@ impl ObjectDirectory {
         data: &[u8],
     ) -> Result<(), String> {
         let Some(var) = self.get_mut(index, sub_index) else {
-            log::warn!(
-                "No value by index={index} and subindex={:?}",
-                sub_index
-            );
+            log::warn!("No value by index={index} and subindex={:?}", sub_index);
             return Err("sdfa".to_string());
         };
 
@@ -138,11 +125,7 @@ impl ObjectDirectory {
         Ok(())
     }
 
-    pub fn get(
-        &mut self,
-        index: u16,
-        sub_index: Option<SubIndex>,
-    ) -> Option<&Variable> {
+    pub fn get(&mut self, index: u16, sub_index: Option<SubIndex>) -> Option<&Variable> {
         let kind = self.index_to_object.get(&index)?;
         match kind {
             ObjectType::Variable(var) => Some(var),
@@ -159,11 +142,7 @@ impl ObjectDirectory {
         }
     }
 
-    pub fn get_mut(
-        &mut self,
-        index: u16,
-        sub_index: Option<SubIndex>,
-    ) -> Option<&mut Variable> {
+    pub fn get_mut(&mut self, index: u16, sub_index: Option<SubIndex>) -> Option<&mut Variable> {
         let kind = self.index_to_object.get_mut(&index)?;
 
         match kind {
@@ -194,9 +173,7 @@ impl ObjectDirectory {
         properties: &HashMap<String, String>,
     ) -> Result<(), LoadError> {
         fn is_hex_char(c: char) -> bool {
-            c.is_ascii_digit()
-                || ('a'..='f').contains(&c)
-                || ('A'..='F').contains(&c)
+            c.is_ascii_digit() || ('a'..='f').contains(&c) || ('A'..='F').contains(&c)
         }
 
         fn is_top(s: &str) -> bool {
@@ -209,10 +186,7 @@ impl ObjectDirectory {
                 && s[0..4].chars().all(is_hex_char)
             {
                 let (index_str, sub_str) = (&s[0..4], &s[7..]);
-                match (
-                    u16::from_str_radix(index_str, 16),
-                    u8::from_str(sub_str),
-                ) {
+                match (u16::from_str_radix(index_str, 16), u8::from_str(sub_str)) {
                     (Ok(index), Ok(sub)) => Some((index, sub)),
                     _ => None,
                 }
@@ -224,9 +198,7 @@ impl ObjectDirectory {
         fn is_name(s: &str) -> Option<u16> {
             s.ends_with("Name")
                 .then(|| s[0..4].chars().all(is_hex_char))
-                .and_then(|valid| {
-                    valid.then(|| u16::from_str_radix(&s[0..4], 16).ok())
-                })
+                .and_then(|valid| valid.then(|| u16::from_str_radix(&s[0..4], 16).ok()))
                 .flatten()
         }
 
@@ -239,21 +211,14 @@ impl ObjectDirectory {
                 return Err(format!("{section_name}. No Parameter Name").into());
             };
 
-            let Some(object_kind) =
-                properties.get("ObjectType").map(|v| parse_number::<u32>(v))
+            let Some(object_kind) = properties.get("ObjectType").map(|v| parse_number::<u32>(v))
             else {
                 return Err(format!("{section_name}. No Object type").into());
             };
 
             match object_kind {
                 OBJECT_TYPE_VARIABLE => {
-                    let var = Variable::new(
-                        properties,
-                        self.node_id,
-                        name,
-                        index,
-                        None,
-                    );
+                    let var = Variable::new(properties, self.node_id, name, index, None);
 
                     self.name_to_index.insert(var.name.clone(), index);
                     self.index_to_object
@@ -304,18 +269,10 @@ impl ObjectDirectory {
                 return Err(format!("{section_name}. No name").into());
             };
 
-            let variable = Variable::new(
-                properties,
-                self.node_id,
-                name,
-                index,
-                Some(sub_index),
-            );
+            let variable = Variable::new(properties, self.node_id, name, index, Some(sub_index));
 
             self.push_by_sub_index(index, variable).map_err(|cause| {
-                LoadError::from(format!(
-                    "{section_name}. Failed to add variable: {cause}"
-                ))
+                LoadError::from(format!("{section_name}. Failed to add variable: {cause}"))
             })?;
         } else if let Some(index) = is_name(section_name) {
             // Logic related to CompactSubObj
@@ -323,22 +280,16 @@ impl ObjectDirectory {
                 .get("NrOfEntries")
                 .and_then(|v| v.parse::<u8>().ok())
             else {
-                return Err(
-                    format!("{section_name}. NrOfEntries is invalid").into()
-                );
+                return Err(format!("{section_name}. NrOfEntries is invalid").into());
             };
 
-            if let Some(ObjectType::Array(arr)) =
-                self.index_to_object.get_mut(&index)
-            {
+            if let Some(ObjectType::Array(arr)) = self.index_to_object.get_mut(&index) {
                 if let Some(src_var) = arr.index_to_variable.get(&1u8) {
                     let cloned_src_var = src_var.clone();
                     let mut new_vars = Vec::new();
                     for subindex in 1..=num_of_entries {
                         let mut var = cloned_src_var.clone();
-                        if let Some(name) =
-                            properties.get(&subindex.to_string())
-                        {
+                        if let Some(name) = properties.get(&subindex.to_string()) {
                             var.name = name.clone();
                             var.sub_index = subindex;
                             new_vars.push(var);
@@ -355,13 +306,9 @@ impl ObjectDirectory {
     }
 }
 
-pub fn evaluate_expression_with_node_id(
-    node_id: u8,
-    expression: &str,
-) -> String {
+pub fn evaluate_expression_with_node_id(node_id: u8, expression: &str) -> String {
     // Replace $NODEID with the actual node_id
-    let modified_expression =
-        expression.replace("$NODEID", &node_id.to_string());
+    let modified_expression = expression.replace("$NODEID", &node_id.to_string());
 
     // Evaluate simple arithmetic expressions
     modified_expression

@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct AccessType {
     pub read_access: bool,
@@ -25,24 +27,6 @@ impl AccessType {
         write_access: true,
     };
 
-    pub const fn new(read: bool, write: bool) -> Self {
-        AccessType {
-            read_access: read,
-            write_access: write,
-        }
-    }
-
-    pub fn from_str(s: &str) -> Self {
-        let keyword = s.to_lowercase();
-
-        match keyword.as_str() {
-            "rw" => AccessType::READ_WRITE,
-            "ro" => AccessType::READ_ONLY,
-            "wo" => AccessType::WRITE_ONLY,
-            _ => AccessType::NONE
-        }
-    }
-
     pub fn is_readable(&self) -> bool {
         self.read_access
     }
@@ -52,3 +36,17 @@ impl AccessType {
     }
 }
 
+impl FromStr for AccessType {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let keyword = s.to_lowercase();
+
+        Ok(match keyword.as_str() {
+            "rw" => AccessType::READ_WRITE,
+            "ro" => AccessType::READ_ONLY,
+            "wo" => AccessType::WRITE_ONLY,
+            _ => AccessType::NONE,
+        })
+    }
+}

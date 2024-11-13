@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use crate::dictionary::{dict::format_properties_value, parse_number};
 
 use super::{dict::Properties, AccessType, DataType, Value};
@@ -32,7 +34,7 @@ impl Variable {
 
         let access_type = properties
             .get("AcessType")
-            .map(|line| AccessType::from_str(&line))
+            .map(|line| AccessType::from_str(line).unwrap())
             .unwrap_or(AccessType::READ_WRITE);
 
         let pdo_mapping = properties
@@ -44,8 +46,8 @@ impl Variable {
 
         let dt = properties
             .get("DataType")
-            .map(|line| parse_number(&line))
-            .map(|raw_dt| DataType::from_u32(raw_dt))
+            .map(|line| parse_number(line))
+            .map(DataType::from_u32)
             .expect("DataType is not present in dict");
 
         let min = format_properties_value(properties, "LowLimit", node_id, dt);
