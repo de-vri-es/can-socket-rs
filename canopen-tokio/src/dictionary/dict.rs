@@ -83,6 +83,8 @@ impl ObjectDirectory {
     }
 
     pub fn push_by_sub_index(&mut self, index: u16, var: Variable) -> Result<(), String> {
+        self.name_to_index.insert(var.name.clone(), index);
+
         match self.index_to_object.get_mut(&index) {
             None => Err(format!("No id:{:x?}", index)),
 
@@ -132,12 +134,12 @@ impl ObjectDirectory {
 
             ObjectType::Array(array) => {
                 let index = sub_index.expect("SubIndex is not provided");
-                array.get(index)
+                array.index(index)
             }
 
             ObjectType::Record(record) => {
                 let index = sub_index.expect("SubIndex is not provided");
-                record.get(index)
+                record.index(index)
             }
         }
     }
@@ -149,18 +151,34 @@ impl ObjectDirectory {
             ObjectType::Variable(var) => Some(var),
             ObjectType::Array(array) => {
                 let index = sub_index.expect("SubIndex is not provided");
-                array.get_mut(index)
+                array.index_mut(index)
             }
             ObjectType::Record(record) => {
                 let index = sub_index.expect("SubIndex is not provided");
-                record.get_mut(index)
+                record.index_mut(index)
             }
         }
     }
 
-    pub fn get_object_by_name(&self, name: &str) -> Option<&ObjectType> {
+    pub fn find_by_name(&self, name: &str) -> Option<&Variable> {
         let index = self.name_to_index.get(name)?;
-        self.index_to_object.get(index)
+        match self.index_to_object.get(index)? {
+            ObjectType::Variable(var) => Some(var),
+            ObjectType::Array(array) => array.find_by_name(name),
+            ObjectType::Record(record) => record.find_by_name(name),
+        }
+    }
+
+    pub fn find_all_by_name(&self, names: &[&str]) -> Option<Vec<&Variable>> {
+        let mut variables = Vec::new();
+
+        for name in names.iter() {
+            log::debug!("Next name = {name}");
+            let variable = self.find_by_name(name)?;
+            variables.push(variable);
+        }
+
+        Some(variables)
     }
 
     pub fn get_mut_object(&mut self, index: u16) -> Option<&mut ObjectType> {
@@ -220,9 +238,7 @@ impl ObjectDirectory {
                 OBJECT_TYPE_VARIABLE => {
                     let var = Variable::new(properties, self.node_id, name, index, None);
 
-                    self.name_to_index.insert(var.name.clone(), index);
-                    self.index_to_object
-                        .insert(index, ObjectType::Variable(var));
+                    self.push(index, name.clone(), ObjectType::Variable(var));
                 }
 
                 OBJECT_TYPE_ARRAY => {

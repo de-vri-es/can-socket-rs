@@ -32,15 +32,15 @@ impl Record {
         let _ = self.index_to_variable.insert(var.sub_index, var);
     }
 
-    pub fn get(&self, sub_index: u8) -> Option<&Variable> {
+    pub fn index(&self, sub_index: u8) -> Option<&Variable> {
         self.index_to_variable.get(&sub_index)
     }
 
-    pub fn get_mut(&mut self, sub_index: u8) -> Option<&mut Variable> {
+    pub fn index_mut(&mut self, sub_index: u8) -> Option<&mut Variable> {
         self.index_to_variable.get_mut(&sub_index)
     }
 
-    pub fn get_by_name(&self, name: &str) -> Option<&Variable> {
+    pub fn find_by_name(&self, name: &str) -> Option<&Variable> {
         let index = *self.name_to_index.get(name)?;
         self.index_to_variable.get(&index)
     }

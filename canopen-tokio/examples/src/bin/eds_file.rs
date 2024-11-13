@@ -1,4 +1,4 @@
-use canopen_tokio::dictionary;
+use canopen_tokio::{dictionary, pdo::PdoMapping};
 
 fn main() {
     env_logger::builder()
@@ -6,7 +6,7 @@ fn main() {
         .parse_default_env()
         .init();
 
-    dictionary::ObjectDirectory::load_from_content(
+    let dict = dictionary::ObjectDirectory::load_from_content(
         1,
         r#"
 [FileInfo]
@@ -1754,4 +1754,11 @@ NrOfSeg=0
 		"#,
     )
     .expect("Valid eds");
+
+    let variables = dict.find_all_by_name(&["Motor status", "Driver temperature"]).expect("Var is not found");
+    let mappings = variables.into_iter()
+        .map(|v| v.as_mapping().expect("Not mappable"))
+        .collect::<Vec<PdoMapping>>();
+
+    assert!(mappings.len() == 2);
 }

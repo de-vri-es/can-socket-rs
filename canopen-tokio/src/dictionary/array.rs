@@ -34,11 +34,11 @@ impl Array {
         let _ = self.index_to_variable.insert(var.sub_index, var);
     }
 
-    pub fn get(&self, sub_index: SubIndex) -> Option<&Variable> {
+    pub fn index(&self, sub_index: SubIndex) -> Option<&Variable> {
         self.index_to_variable.get(&sub_index)
     }
 
-    pub fn get_mut(&mut self, sub_index: SubIndex) -> Option<&mut Variable> {
+    pub fn index_mut(&mut self, sub_index: SubIndex) -> Option<&mut Variable> {
         if self.index_to_variable.contains_key(&sub_index) {
             self.index_to_variable.get_mut(&sub_index)
         } else if sub_index > 0 && sub_index < 0xFF {
@@ -61,5 +61,11 @@ impl Array {
         } else {
             None
         }
+    }
+
+    pub fn find_by_name(&self, name: &str) -> Option<&Variable> {
+        log::debug!("{:?}", self.name_to_index);
+        let index = self.name_to_index.get(name)?;
+        self.index_to_variable.get(index)
     }
 }

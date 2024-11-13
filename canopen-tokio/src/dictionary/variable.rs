@@ -1,6 +1,10 @@
 use std::str::FromStr;
 
-use crate::dictionary::{dict::format_properties_value, parse_number};
+use crate::{
+    dictionary::{dict::format_properties_value, parse_number},
+    pdo::PdoMapping,
+    ObjectIndex,
+};
 
 use super::{dict::Properties, AccessType, DataType, Value};
 
@@ -54,12 +58,10 @@ impl Variable {
 
         let max = format_properties_value(properties, "HighLimit", node_id, dt);
 
-        let default_value =
-            format_properties_value(properties, "DefaultValue", node_id, dt)
-                .unwrap_or(Value::from_bytes(&dt.as_default_bytes()));
+        let default_value = format_properties_value(properties, "DefaultValue", node_id, dt)
+            .unwrap_or(Value::from_bytes(&dt.as_default_bytes()));
 
-        let parameter_value =
-            format_properties_value(properties, "ParameterValue", node_id, dt);
+        let parameter_value = format_properties_value(properties, "ParameterValue", node_id, dt);
 
         Variable {
             name: name.to_owned(),
@@ -74,5 +76,16 @@ impl Variable {
             index,
             sub_index: sub_index.unwrap_or(0),
         }
+    }
+
+    pub fn as_mapping(&self) -> Option<PdoMapping> {
+        if !self.pdo_mappable {
+            return None;
+        }
+
+        Some(PdoMapping {
+            object: ObjectIndex::new(self.index, self.sub_index),
+            bit_length: self.data_type.bit_size(),
+        })
     }
 }

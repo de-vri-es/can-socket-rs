@@ -75,6 +75,7 @@ pub(crate) async fn configure_rpdo(
         timeout,
     )
     .await?;
+
     configure_pdo_mapping(
         bus,
         node_id,
