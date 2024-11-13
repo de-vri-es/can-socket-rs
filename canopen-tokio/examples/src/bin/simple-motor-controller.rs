@@ -1,6 +1,5 @@
 use can_socket::tokio::CanSocket;
 use can_socket::{CanFrame, CanId};
-use canopen_tokio::dictionary::ObjectDirectory;
 use canopen_tokio::nmt::NmtCommand;
 use canopen_tokio::pdo::{
     PdoMapping, RpdoCommunicationParameters, RpdoConfiguration, RpdoKind, RpdoTransmissionType,

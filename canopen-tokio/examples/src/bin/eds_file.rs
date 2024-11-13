@@ -1,6 +1,19 @@
-use canopen_tokio::{dictionary, pdo::PdoMapping};
+use std::time::Duration;
 
-fn main() {
+use can_socket::tokio::CanSocket;
+use canopen_tokio::{
+    dictionary,
+    nmt::NmtCommand,
+    pdo::{
+        PdoMapping, RpdoCommunicationParameters, RpdoConfiguration, RpdoKind, RpdoTransmissionType,
+        TpdoCommunicationParameters, TpdoConfiguration, TpdoKind, TpdoTransmissionType,
+    },
+    sdo::SdoAddress,
+    CanOpenSocket, ObjectIndex,
+};
+
+#[tokio::main]
+async fn main() {
     env_logger::builder()
         .filter_module(module_path!(), log::LevelFilter::Info)
         .parse_default_env()
@@ -1755,10 +1768,84 @@ NrOfSeg=0
     )
     .expect("Valid eds");
 
-    let variables = dict.find_all_by_name(&["Motor status", "Driver temperature"]).expect("Var is not found");
-    let mappings = variables.into_iter()
-        .map(|v| v.as_mapping().expect("Not mappable"))
-        .collect::<Vec<PdoMapping>>();
+    let tpdo_mappings = {
+        let variables = dict
+            .find_all_by_name(&["Motor status", "Driver temperature"])
+            .expect("Var is not found");
 
-    assert!(mappings.len() == 2);
+        variables
+            .into_iter()
+            .map(|v| v.as_mapping().expect("Not mappable"))
+            .collect::<Vec<PdoMapping>>()
+    };
+
+    let rpdo_mappings = {
+        let variables = dict.find_all_by_name(&["Target speed"]).expect("Not found");
+
+        variables
+            .into_iter()
+            .map(|v| v.as_mapping().expect("Mappable"))
+            .collect::<Vec<PdoMapping>>()
+    };
+
+    let node_id = 12;
+    let timeout = Duration::from_millis(800);
+    let mut socket = {
+        let raw_socket = CanSocket::bind(&"can0").unwrap();
+        CanOpenSocket::new(raw_socket)
+    };
+
+    let sdo = SdoAddress::standard();
+    let tpdo_kind = TpdoKind::First(node_id);
+    let rpdo_kind = RpdoKind::Second(node_id);
+
+    socket
+        .send_nmt_command(node_id, NmtCommand::ResetCommunication, timeout)
+        .await
+        .unwrap();
+
+    let tpdo_config = TpdoConfiguration {
+        communication: TpdoCommunicationParameters {
+            enabled: false, //enable latter to prevent spamming
+            rtr_allowed: true,
+            cob_id: tpdo_kind.into(),
+            mode: TpdoTransmissionType::sync(1).unwrap(),
+            inhibit_time_100us: 0,
+            event_timer_ms: 0,
+            start_sync: 0,
+        },
+        mapping: tpdo_mappings,
+    };
+
+    let rpdo_config = RpdoConfiguration {
+        communication: RpdoCommunicationParameters {
+            cob_id: rpdo_kind.into(),
+            enabled: true,
+            mode: RpdoTransmissionType::sync(),
+            inhibit_time_100us: 0,
+            deadline_timer_ms: 0,
+        },
+        mapping: rpdo_mappings,
+    };
+
+    socket
+        .configure_tpdo(node_id, sdo, tpdo_kind, &tpdo_config, timeout)
+        .await
+        .unwrap();
+
+    socket
+        .configure_rpdo(node_id, sdo, rpdo_kind, &rpdo_config, timeout)
+        .await
+        .unwrap();
+
+    //go to operational state
+    socket
+        .send_nmt_command(node_id, NmtCommand::Start, timeout)
+        .await
+        .unwrap();
+
+    socket
+        .sdo_download(node_id, sdo, ObjectIndex::new(0x6042, 1), 0, timeout)
+        .await
+        .unwrap();
 }
