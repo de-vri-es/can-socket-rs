@@ -88,4 +88,11 @@ impl Variable {
             bit_length: self.data_type.bit_size(),
         })
     }
+
+    pub fn as_index(&self) -> ObjectIndex {
+        ObjectIndex {
+            index: self.index,
+            subindex: self.sub_index,
+        }
+    }
 }
