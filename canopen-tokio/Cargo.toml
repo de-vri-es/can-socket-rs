@@ -12,6 +12,7 @@ edition = "2021"
 
 [dependencies]
 can-socket = { version = "0.3.0", path = "../can-socket", features = ["tokio"] }
+ini_core = "0.2.0"
 log = "0.4.20"
 num_enum = "0.7.0"
 thiserror = "1.0.49"
@@ -21,3 +22,8 @@ tokio = { version = "1.32.0", features = ["time"] }
 clap = { version = "4.4.4", features = ["derive"] }
 env_logger = "0.10.0"
 tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+
+
+[features]
+default = ["fs"]
+fs = ["tokio/fs"]

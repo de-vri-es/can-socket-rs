@@ -6,14 +6,7 @@ use crate::sdo::SdoAddress;
 use crate::{ObjectIndex, CanOpenSocket};
 
 use super::{
-	PdoConfigError,
-	PdoMapping,
-	RpdoCommunicationParameters,
-	RpdoConfiguration,
-	RpdoTransmissionType,
-	TpdoCommunicationParameters,
-	TpdoConfiguration,
-	TpdoTransmissionType,
+	PdoConfigError, PdoMapping, RpdoCommunicationParameters, RpdoConfiguration, RpdoKind, RpdoTransmissionType, TpdoCommunicationParameters, TpdoConfiguration, TpdoKind, TpdoTransmissionType
 };
 
 /// Read the configuration of an RPDO.
@@ -21,11 +14,11 @@ pub(crate) async fn read_rpdo_configuration(
 	bus: &mut CanOpenSocket,
 	node_id: u8,
 	sdo: SdoAddress,
-	pdo: u16,
+	kind: RpdoKind,
 	timeout: Duration,
 ) -> Result<RpdoConfiguration, PdoConfigError> {
-	let mapping_index = super::rpdo_mapping_object(pdo)?;
-	let communication = read_rpdo_communication_parameters(bus, node_id, sdo, pdo, timeout).await?;
+	let mapping_index = super::rpdo_mapping_object(kind)?;
+	let communication = read_rpdo_communication_parameters(bus, node_id, sdo, kind, timeout).await?;
 	let mapping = read_pdo_mapping(bus, node_id, sdo, mapping_index, timeout).await?;
 
 	Ok(RpdoConfiguration {
@@ -39,11 +32,11 @@ pub(crate) async fn read_tpdo_configuration(
 	bus: &mut CanOpenSocket,
 	node_id: u8,
 	sdo: SdoAddress,
-	pdo: u16,
+	kind: TpdoKind,
 	timeout: Duration,
 ) -> Result<TpdoConfiguration, PdoConfigError> {
-	let mapping_index = super::tpdo_mapping_object(pdo)?;
-	let communication = read_tpdo_communication_parameters(bus, node_id, sdo, pdo, timeout).await?;
+	let mapping_index = super::tpdo_mapping_object(kind)?;
+	let communication = read_tpdo_communication_parameters(bus, node_id, sdo, kind, timeout).await?;
 	let mapping = read_pdo_mapping(bus, node_id, sdo, mapping_index, timeout).await?;
 
 	Ok(TpdoConfiguration {
@@ -57,10 +50,10 @@ pub(crate) async fn read_rpdo_communication_parameters(
 	bus: &mut CanOpenSocket,
 	node_id: u8,
 	sdo: SdoAddress,
-	pdo: u16,
+	kind: RpdoKind,
 	timeout: Duration,
 ) -> Result<RpdoCommunicationParameters, PdoConfigError> {
-	let config_index = super::rpdo_communication_params_object(pdo)?;
+	let config_index = super::rpdo_communication_params_object(kind)?;
 
 	let valid_subindices: u8 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
 	let cob_id: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 1), timeout).await?;
@@ -94,10 +87,10 @@ pub(crate) async fn read_tpdo_communication_parameters(
 	bus: &mut CanOpenSocket,
 	node_id: u8,
 	sdo: SdoAddress,
-	pdo: u16,
+	kind: TpdoKind,
 	timeout: Duration,
 ) -> Result<TpdoCommunicationParameters, PdoConfigError> {
-	let config_index = super::tpdo_communication_params_object(pdo)?;
+	let config_index = super::tpdo_communication_params_object(kind)?;
 
 	let valid_subindices: u8 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 0), timeout).await?;
 	let cob_id: u32 = bus.sdo_upload(node_id, sdo, ObjectIndex::new(config_index, 1), timeout).await?;

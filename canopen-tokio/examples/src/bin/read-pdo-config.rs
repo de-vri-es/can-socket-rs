@@ -1,4 +1,5 @@
 use can_socket::tokio::CanSocket;
+use canopen_tokio::pdo::{RpdoKind, TpdoKind};
 use canopen_tokio::CanOpenSocket;
 use canopen_tokio::sdo::SdoAddress;
 use std::time::Duration;
@@ -54,11 +55,13 @@ async fn do_main(options: Options) -> Result<(), ()> {
 	let mut socket = CanOpenSocket::new(socket);
 
 	if let Some(pdo) = options.rpdo {
-		let config = socket.read_rpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
+		let kind = RpdoKind::new(options.node_id, pdo).expect("Invalid ord for rpdo");
+		let config = socket.read_rpdo_configuration(options.node_id, SdoAddress::standard(), kind, options.timeout).await
 			.map_err(|e| log::error!("Failed to read configuration of RPDO {} of node {}: {e}", pdo, options.node_id))?;
 		println!("{config:#?}");
 	} else if let Some(pdo) = options.tpdo {
-		let config = socket.read_tpdo_configuration(options.node_id, SdoAddress::standard(), pdo, options.timeout).await
+		let kind = TpdoKind::new(options.node_id, pdo).expect("Invalid ord for tpdo");
+		let config = socket.read_tpdo_configuration(options.node_id, SdoAddress::standard(), kind, options.timeout).await
 			.map_err(|e| log::error!("Failed to read configuration of TPDO {} of node {}: {e}", pdo, options.node_id))?;
 		println!("{config:#?}");
 	}

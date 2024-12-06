@@ -1,0 +1,12 @@
+[package]
+name = "canopen-tokio-examples"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+can-socket = { path = "../../can-socket", features = ["tokio"] }
+canopen-tokio = { path = "../../canopen-tokio" }
+log = "0.4"
+clap = { version = "4.4.4", features = ["derive"] }
+tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+env_logger = "0.10.0"
