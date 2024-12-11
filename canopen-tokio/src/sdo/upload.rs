@@ -230,7 +230,7 @@ impl UploadBuffer for Vec<u8> {
 	}
 }
 
-impl<'a> UploadBuffer for &'a mut [u8] {
+impl UploadBuffer for &mut [u8] {
 	fn reserve(&mut self, needed: usize) -> Result<(), super::BufferTooSmall> {
 		if needed <= self.len() {
 			Ok(())
