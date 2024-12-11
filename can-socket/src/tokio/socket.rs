@@ -93,7 +93,7 @@ impl CanSocket {
 	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
 	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
 	pub fn try_send(&self, frame: &CanFrame) -> std::io::Result<()> {
-		try_io(&self.io, tokio::io::Interest::WRITABLE, |inner| {
+		self.io.try_io(tokio::io::Interest::WRITABLE, |inner| {
 			inner.send(&frame.inner)
 		})
 	}
@@ -127,7 +127,7 @@ impl CanSocket {
 	/// Note that if this function success, it only means that the kernel accepted the frame for transmission.
 	/// It does not mean the frame has been sucessfully transmitted over the CAN bus.
 	pub fn try_send_to(&self, frame: &CanFrame, interface: &CanInterface) -> std::io::Result<()> {
-		try_io(&self.io, tokio::io::Interest::WRITABLE, |inner| {
+		self.io.try_io(tokio::io::Interest::WRITABLE, |inner| {
 			inner.send_to(&frame.inner, &interface.inner)
 		})
 	}
@@ -151,7 +151,7 @@ impl CanSocket {
 
 	/// Receive a frame from the socket, without waiting for one to become available.
 	pub fn try_recv(&self) -> std::io::Result<CanFrame> {
-		try_io(&self.io, tokio::io::Interest::READABLE, |socket| {
+		self.io.try_io(tokio::io::Interest::READABLE, |socket| {
 			Ok(CanFrame {
 				inner: socket.recv()?,
 			})
@@ -178,7 +178,7 @@ impl CanSocket {
 
 	/// Receive a frame from the socket, without waiting for one to become available.
 	pub fn try_recv_from(&self) -> std::io::Result<(CanFrame, CanInterface)> {
-		try_io(&self.io, tokio::io::Interest::READABLE, |socket| {
+		self.io.try_io(tokio::io::Interest::READABLE, |socket| {
 			let (frame, interface) = socket.recv_from()?;
 			let frame = CanFrame { inner: frame };
 			let interface = CanInterface { inner: interface };
@@ -269,39 +269,3 @@ impl std::os::fd::IntoRawFd for CanSocket {
 		self.io.into_inner().into_raw_fd()
 	}
 }
-
-fn try_io<T, F, R>(fd: &AsyncFd<T>, interest: tokio::io::Interest, f: F) -> std::io::Result<R>
-where
-	T: std::os::unix::io::AsRawFd,
-	F: FnOnce(&T) -> std::io::Result<R>,
-{
-	// TODO: Replace this function with `tokio::io::AsyncFd::try_io` when PR gets merged and released:
-	// https://github.com/tokio-rs/tokio/pull/6967
-	use std::future::Future;
-
-	let waker = unsafe { std::task::Waker::from_raw(nop_waker_new()) };
-	let mut context = std::task::Context::from_waker(&waker);
-
-	let mut f = Some(f);
-	let work = fd.async_io(interest, move |inner| {
-		let f = f.take().unwrap();
-		f(inner)
-	});
-	let work = std::pin::pin!(work);
-	match work.poll(&mut context) {
-		std::task::Poll::Ready(result) => result,
-		std::task::Poll::Pending => Err(std::io::ErrorKind::WouldBlock.into()),
-	}
-}
-
-const NOP_WAKER_VTABLE: std::task::RawWakerVTable = std::task::RawWakerVTable::new(nop_waker_clone, nop_waker_wake, nop_waker_wake_by_ref, nop_waker_drop);
-
-fn nop_waker_new() -> std::task::RawWaker {
-	std::task::RawWaker::new(std::ptr::null(), &NOP_WAKER_VTABLE)
-}
-fn nop_waker_clone(_waker: *const ()) -> std::task::RawWaker {
-	nop_waker_new()
-}
-fn nop_waker_wake(_waker: *const ()) { }
-fn nop_waker_wake_by_ref(_waker: *const ()) { }
-fn nop_waker_drop(_waker: *const ()) { }
