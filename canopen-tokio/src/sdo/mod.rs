@@ -164,7 +164,7 @@ pub enum AbortReason {
 /// The CAN frame should be an SDO response from an SDO server.
 fn get_server_command(frame: &CanFrame) -> Result<(ServerCommand, [u8; 8]), SdoError> {
 	let data = frame.data()
-		.ok_or_else(|| SdoError::MalformedResponse(MalformedResponse::WrongFrameSize(0)))?;
+		.ok_or(SdoError::MalformedResponse(MalformedResponse::WrongFrameSize(0)))?;
 	let data: [u8; 8] = data.as_slice()
 		.try_into()
 		.map_err(|_| MalformedResponse::WrongFrameSize(data.len()))?;
