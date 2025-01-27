@@ -260,6 +260,12 @@ impl ObjectIndex {
     }
 }
 
+impl From<(u16, u8)> for ObjectIndex {
+    fn from(value: (u16, u8)) -> Self {
+        Self::new(value.0, value.1)
+    }
+}
+
 impl std::fmt::Debug for ObjectIndex {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ObjectIndex")
