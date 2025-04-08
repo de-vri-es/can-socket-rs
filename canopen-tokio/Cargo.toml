@@ -15,9 +15,9 @@ can-socket = { version = "0.3.3", path = "../can-socket", features = ["tokio"] }
 log = "0.4.20"
 num_enum = "0.7.0"
 thiserror = "1.0.49"
-tokio = { version = "1.32.0", features = ["time"] }
+tokio = { version = "1.43.1", features = ["time"] }
 
 [dev-dependencies]
 clap = { version = "4.4.4", features = ["derive"] }
 env_logger = "0.10.0"
-tokio = { version = "1.32.0", features = ["macros", "rt-multi-thread"] }
+tokio = { version = "1.43.1", features = ["macros", "rt-multi-thread"] }
