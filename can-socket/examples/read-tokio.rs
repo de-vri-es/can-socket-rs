@@ -32,7 +32,7 @@ async fn do_main(options: Options) -> Result<(), ()> {
 		let frame = socket.recv()
 			.await
 			.map_err(|e| eprintln!("Failed to receive frame on interface {}: {e}", options.interface))?;
-		println!("{:#?}", frame);
+		println!("{frame:#?}");
 		eprintln!()
 	}
 

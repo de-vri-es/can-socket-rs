@@ -193,7 +193,7 @@ impl Socket {
 			if name.len() + 1 > std::mem::size_of_val(&req.ifr_name) {
 				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "interface name too long"));
 			}
-			if name.as_bytes().iter().any(|&byte| byte == 0) {
+			if name.as_bytes().contains(&0) {
 				return Err(std::io::Error::new(std::io::ErrorKind::InvalidInput, "interface name contain a null byte"));
 			}
 			std::ptr::copy(name.as_ptr().cast(), req.ifr_name.as_mut_ptr(), name.len());
