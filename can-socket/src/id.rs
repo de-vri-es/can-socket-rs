@@ -116,7 +116,7 @@ macro_rules! extended_id {
 }
 
 /// A CAN ID, either standard (11 bit) or extended (29 bits).
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(C)]
 pub enum CanId {
 	/// A standard 11 bit CAN ID.
@@ -127,7 +127,7 @@ pub enum CanId {
 }
 
 /// A standard 11 bit CAN ID.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
 pub struct StandardId {
 	/// The raw ID.
@@ -135,7 +135,7 @@ pub struct StandardId {
 }
 
 /// An extended 29 bit CAN ID.
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd)]
+#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash)]
 #[repr(transparent)]
 pub struct ExtendedId {
 	/// The raw ID.
