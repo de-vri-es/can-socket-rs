@@ -1,4 +1,4 @@
-# Unreleased
+# Version 0.3.4 - 2025-07-31
 - [add][minor] Implement `Hash` for `CanId`, `StandardId` and `ExtendedId`.
 
 # Version 0.3.3 - 2024-12-11
