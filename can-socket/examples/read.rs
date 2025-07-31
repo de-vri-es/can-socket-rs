@@ -30,7 +30,7 @@ fn do_main(options: Options) -> Result<(), ()> {
 		eprintln!("Reading frame {i}...");
 		let frame = socket.recv()
 			.map_err(|e| eprintln!("Failed to receive frame on interface {}: {e}", options.interface))?;
-		println!("{:#?}", frame);
+		println!("{frame:#?}");
 		eprintln!()
 	}
 
