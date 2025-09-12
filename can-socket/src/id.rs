@@ -343,15 +343,6 @@ impl ExtendedId {
 	}
 }
 
-impl std::fmt::Display for CanId {
-	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		match self {
-			CanId::Standard(x) => write!(f, "0x{:03X}", x.id),
-			CanId::Extended(x) => write!(f, "0x{:08X}", x.id),
-		}
-	}
-}
-
 impl PartialEq<StandardId> for CanId {
 	fn eq(&self, other: &StandardId) -> bool {
 		self.as_standard().is_some_and(|x| x == *other)
@@ -536,6 +527,27 @@ fn parse_number(input: &str) -> Result<u32, std::num::ParseIntError> {
 		u32::from_str_radix(binary, 2)
 	} else {
 		input.parse()
+	}
+}
+
+impl std::fmt::Display for CanId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			CanId::Standard(x) => x.fmt(f),
+			CanId::Extended(x) => x.fmt(f),
+		}
+	}
+}
+
+impl std::fmt::Display for StandardId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "0x{:03X}", self.id)
+	}
+}
+
+impl std::fmt::Display for ExtendedId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		write!(f, "0x{:08X}", self.id)
 	}
 }
 
