@@ -343,6 +343,15 @@ impl ExtendedId {
 	}
 }
 
+impl std::fmt::Display for CanId {
+	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+		match self {
+			CanId::Standard(x) => write!(f, "{}", x.id),
+			CanId::Extended(x) => write!(f, "{}", x.id),
+		}
+	}
+}
+
 impl PartialEq<StandardId> for CanId {
 	fn eq(&self, other: &StandardId) -> bool {
 		self.as_standard().is_some_and(|x| x == *other)
@@ -557,13 +566,13 @@ impl std::fmt::Debug for ExtendedId {
 
 impl std::fmt::LowerHex for StandardId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		self.as_u16().fmt(f)
+		std::fmt::LowerHex::fmt(&self.as_u16(), f)
 	}
 }
 
 impl std::fmt::LowerHex for ExtendedId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		self.as_u32().fmt(f)
+		std::fmt::LowerHex::fmt(&self.as_u32(), f)
 	}
 }
 
@@ -578,13 +587,13 @@ impl std::fmt::LowerHex for CanId {
 
 impl std::fmt::UpperHex for StandardId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		self.as_u16().fmt(f)
+		std::fmt::UpperHex::fmt(&self.as_u16(), f)
 	}
 }
 
 impl std::fmt::UpperHex for ExtendedId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-		self.as_u32().fmt(f)
+		std::fmt::UpperHex::fmt(&self.as_u32(), f)
 	}
 }
 
