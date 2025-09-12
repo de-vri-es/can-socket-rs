@@ -346,8 +346,8 @@ impl ExtendedId {
 impl std::fmt::Display for CanId {
 	fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
 		match self {
-			CanId::Standard(x) => write!(f, "{}", x.id),
-			CanId::Extended(x) => write!(f, "{}", x.id),
+			CanId::Standard(x) => write!(f, "0x{:03X}", x.id),
+			CanId::Extended(x) => write!(f, "0x{:08X}", x.id),
 		}
 	}
 }
